@@ -16,10 +16,70 @@ library("rlang")
 set.seed(1014)
 ```
 
+<!-- to hide comments change "contents" to "none" -->
+<style>
+.r-comment {
+   color: blue;
+	display:contents;
+	background-color:#FCF3CF;
+}
+</style>
 
-Programming with dplyr requires a bit of special knowledge because most dplyr
-verbs are not normal functions. They are **quoting functions**. In this vignette
-you will learn about quoting functions, what challenges they pose for
+<div class=r-comment>
+<p>Comments are put inside of div tags like so:
+<pre>
+&lt;div class=r-comment&gt;
+a comment
+&lt;/div&gt;
+</pre>
+<p> To turn off the comments just look for the &lt;style&gt; tag at beginning
+of .rmd file and change display:contents; to display:none;
+<p> To find comments in .rmd file search for &lt;div class=r-comment&gt;
+</div>
+
+<div class=r-comment>
+<p>General comment
+<p>The thing I have found about writing papers/courses is that it is hard to put yourself in a frame of mind of the read who know much less about the topic than you.
+<p>So with that in mind this is what I try to do, besides checking for technical correctness.
+<ul>
+<li>point out forward references that will be cleared up later
+<li>no undefined terms, even if there is only a quick phrase that points out the details are not necessary. A sees an undefined term will sometimes think they missed something and try to "look it up" and be frustrated when the can't find it. The should be able to get all the basics you are trying to cover from just this paper.
+
+</ul
+</div>
+
+<div class=r-comment>
+<p>"quoting function" is not a standard R term, is it? If a reader looked for R quoting functions they would find no details about them. You should make that clear to reader. It would be better to use a standard R term for this but I don't think there is one.
+
+<p>Isn't a dplyr verb the same as a dplyr function? For the reader to understand what you are talking about they would have to understand grammars and have read the doc's about how dplyr is a grammer for data access/manipulation. That's a lot to ask and it really isn't a level of knowledge need to make use of dplyr.
+
+<p>But since verb is standard R term that would be better to use than quoting function.
+
+<p>BTW when I see the term "quoting functions" I thing of quote(), rlang::quo and so on. So as is I think quoting functions is a confusing description.
+</div>
+
+Programming with dplyr is about making functions that are easier to use. dplyr::select is an example of a kind of function you might want to make because the syntax of calling it is just easier to digest and understand, once you get used to it.
+
+```{r select}
+t <- tibble::tribble(
+	~a, ~b,
+	1, 2
+)
+# just literal table and column names are needed
+select(t, size = a)
+```
+You can pick off columns from a data.frame without having to use filters or even quotation marks.
+
+But programming with dplyr requires a bit of special knowledge because most dplyr
+functions are not like the **regular** functions you are used to writing. In fact to distinguish them from regular functions we call them verbs. 
+
+The thing that distinguishes verbs from regular functions is in the way verbs treat their arguments. Unforunately R documentation doesn't tell you if a function is a verb or regular function. That distinction doesn't matter except when you are using them to do dplyr programming.
+
+
+
+We will call these **quoting functions**. That's not a standard term and the documentation for R doesn't tell you if a function is a standard or quoting function. But quoting functions are what make "programming on the language" possible so we need some way to refer to them. 
+
+In this vignette you will learn about quoting functions, what challenges they pose for
 programming, and how **tidy evaluation** solves those problems.
 
 
@@ -441,8 +501,13 @@ quoting(!! x)
 We have in fact just reinvented `expr()`! Indeed `expr()` is a simple wrapper
 around `enexpr()`:
 
+<div class=r-comment>
+<p> dplyr::expr was caused error because expr is in base, not dplyr
+<p>removed dplyr from dplyr::expr
+</div>
+
 ```{r}
-dplyr::expr
+expr
 ```
 
 In the same vein, `quo()` is a wrapper around `enquo()`. All it does is to
