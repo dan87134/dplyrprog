@@ -40,8 +40,7 @@ of .rmd file and change display:contents; to display:none;
 
 <div class=r-comment>
 
-## General Comment so far
-
+ <h2>General Comment so far</h2>
 <p>So far I think this paper will be a lot of help to R users that are pretty good at R
 already and have some background in programming. 
 
@@ -55,8 +54,7 @@ because  I think a reader may have similar questions pop into their head.
 
 <p>Everything in here is just IMHO, of course :-)
 
-</div></div>
-
+</div>
 
 
 <div class=r-comment>
