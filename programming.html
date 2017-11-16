@@ -79,6 +79,19 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 }
 </style>
 <div class="r-comment">
+
+<div id="general-comment-so-far" class="section level2">
+<h2>General Comment so far</h2>
+<p>
+<p>So far I think this paper will be a lot of help to R uses that are pretty good at R already and have some background in programming.</p>
+<p>
+<p>But I think it leaves many questions that most R users who want to start using tidy eval with a lot of questions because many of the points covered imply more R and programming knowledge than typical R users have… even those making packages.</p>
+<p>
+<p>I comment as I read thought the paper… and when I comment I just write down whatever comes into my head… because that’s what I think a reader may have similar questions pop into their head.</p>
+<p>
+<p>Everything in here is just IMHO, of course :-)</p>
+</div>
+<div class="r-comment">
 <p>
 Comments are in a blue font and in the .rmd file are put inside of div tags like so:
 <pre>
@@ -138,6 +151,7 @@ Isn’t “tidy eval” the term typically used to describe how evaluation of qu
 Changed “tidy evaluation” to “tidy eval”
 </div>
 <p>In this vignette you will learn about verbs, what challenges they pose for programming, and how <strong>tidy eval</strong> solves those problems.</p>
+</div>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
 <div class="r-comment">
@@ -199,7 +213,7 @@ b &lt;-<span class="st"> </span><span class="dv">3</span>
 <span class="co">#&gt; [1] TRUE</span></code></pre></div>
 <p>In this example R’s standard evaluation is done on the two arguments before they are compared. But after evaluation both arguments are the same, <code>c(2,3)</code>, so <code>identical</code> returns TRUE.</p>
 <p>It would be interesting to see a function similar to <code>identitical</code> that is a verb. No such function exists so we will have to make one. In order to do this we will need a function from the rlang package named <code>enquo</code>. <a href="http://rlang.tidyverse.org/reference/quosure.html" class="uri">http://rlang.tidyverse.org/reference/quosure.html</a></p>
-<p><code>enquo</code> is one of a number of quoting functions provided by R. It comes from the rlang package and it is used specifically to quote an argument of a function. Quoting in programming means taking an expression and turning into an object this is similar to a string. We’ll cover more details about <code>enquo</code> later in this paper.</p>
+<p><code>enquo</code> is one of a number of quoting functions provided by R. It comes from the rlang package and it is used specifically to quote an argument of a function. Quoting in programming means taking an expression and turning into an object this is similar to a string.</p>
 <p>This is our identicalv verb…meaning is works like <code>identical</code> but is does not let R apply it’s standard evaluation to an argument</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">identicalv &lt;-<span class="st"> </span><span class="cf">function</span>(arg1, arg2) {
     <span class="kw">identical</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg1), rlang<span class="op">::</span><span class="kw">enquo</span>(arg2))
@@ -210,6 +224,7 @@ b &lt;-<span class="st"> </span><span class="dv">3</span>
 <span class="co">#&gt; [1] FALSE</span></code></pre></div>
 <p>Putting the same arguments into <code>identicalv</code> as we did <code>identical</code> returns a false because it sees arg1 and arg2 as being different <code>strings</code>. We can change identical` a little bit to see why this is.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">identicalv &lt;-<span class="st"> </span><span class="cf">function</span>(arg1, arg2) {
+    <span class="co"># print out what rlang::enquo produces as a string</span>
     <span class="kw">print</span>(<span class="kw">as.character</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg1)))
     <span class="kw">print</span>(<span class="kw">as.character</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg2)))
     <span class="kw">identical</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg1), rlang<span class="op">::</span><span class="kw">enquo</span>(arg2))
@@ -220,25 +235,7 @@ b &lt;-<span class="st"> </span><span class="dv">3</span>
 <span class="co">#&gt; [1] &quot;~&quot;       &quot;c(a, 3)&quot;</span>
 <span class="co">#&gt; [1] &quot;~&quot;       &quot;c(2, b)&quot;</span>
 <span class="co">#&gt; [1] FALSE</span></code></pre></div>
-<p>On the other hand, a quoting function sees the <em>expression</em> typed as argument rather than the value of this expression. The expression might be evaluated a bit later or might not be evaluated at all. The fundamental quoting function is <code>quote()</code>, it returns the expression ot its argument:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quote</span>(<span class="dv">6</span>)
-<span class="co">#&gt; [1] 6</span>
-
-<span class="kw">quote</span>(<span class="dv">2</span> <span class="op">*</span><span class="st"> </span><span class="dv">3</span>)
-<span class="co">#&gt; 2 * 3</span>
-
-<span class="kw">quote</span>(a <span class="op">*</span><span class="st"> </span>b)
-<span class="co">#&gt; a * b</span></code></pre></div>
-<p>In fact the action of quoting is something that all programmers are familiar with because this is they create strings. <code>&quot;</code> is a quoting operator. It is a signal that the supplied characters are not code but text. As an R programmer, you are also probably familiar with the formula operator <code>~</code>. This quoting operator returns one or two quoted expressions. Thus the three following expressions are doing something similar, they are quoting their input:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="st">&quot;a * b&quot;</span>
-<span class="co">#&gt; [1] &quot;a * b&quot;</span>
-
-<span class="op">~</span>a <span class="op">*</span><span class="st"> </span>b
-<span class="co">#&gt; ~a * b</span>
-
-<span class="kw">quote</span>(a <span class="op">*</span><span class="st"> </span>b)
-<span class="co">#&gt; a * b</span></code></pre></div>
-<p>The first statement returns a quoted string and the other two return quoted code in a formula or as a bare expression.</p>
+<p>As you an see the object produced by <code>rlang::enquo</code> appears to be a character vector. However this object is much more than a character vector and we’ll see that later in this paper.</p>
 </div>
 <div id="changing-the-context-of-evaluation" class="section level3">
 <h3>Changing the context of evaluation</h3>
