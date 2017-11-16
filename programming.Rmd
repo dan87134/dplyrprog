@@ -55,7 +55,7 @@ because  I think a reader may have similar questions pop into their head.
 
 <p>Everything in here is just IMHO, of course :-)
 
-</div>
+</div></div>
 
 
 
@@ -64,8 +64,8 @@ because  I think a reader may have similar questions pop into their head.
 <p>The thing I have found about writing papers/courses is that it is hard to put yourself in a frame of mind of the reader who knows much less about the topic than you.
 <p>So with that in mind this is what I try to do, besides checking for technical correctness.
 <ul>
-<li>point out forward references that will be cleared up later
-<li>no undefined terms, even if there is only a quick phrase that points out the details are not necessary. A sees an undefined term will sometimes think they missed something and try to "look it up" and be frustrated when the can't find it. The should be able to get all the basics you are trying to cover from just this paper.
+<li>point out forward references that will be cleared up later</li>
+<li>no undefined terms, even if there is only a quick phrase that points out the details are not necessary. A sees an undefined term will sometimes think they missed something and try to "look it up" and be frustrated when the can't find it. The should be able to get all the basics you are trying to cover from just this paper.</li>
 
 </ul>
 
@@ -234,6 +234,9 @@ that later in this paper.
 [^1]: The difference between behavior of `identical` and `identicalv`  is why regular functions are said to use standard evaluation unlike
       verbs which use non-standard evaluation (NSE).
 
+<div class=r-comment>
+Commenting done to here
+</div>
 
 ### Changing the context of evaluation
 
