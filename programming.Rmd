@@ -1,0 +1,815 @@
+---
+title: "Programming with dplyr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Programming with dplyr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[utf8]{inputenc}
+---
+
+```{r setup, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4L, tibble.print_max = 4L)
+library("dplyr")
+library("purrr")
+library("rlang")
+set.seed(1014)
+```
+
+
+Programming with dplyr requires a bit of special knowledge because most dplyr
+verbs are not normal functions. They are **quoting functions**. In this vignette
+you will learn about quoting functions, what challenges they pose for
+programming, and how **tidy evaluation** solves those problems.
+
+
+## Introduction
+
+### Regular functions versus quoting functions
+
+R functions can be categorised in two broad categories: regular functions and
+quoting functions. These functions differ in the way they get their arguments.
+Regular functions only see values. It does not matter what the expression
+supplied as argument is or which variables it involves. The value is computed
+following the standard rules of evaluation [^1]. The fundamental regular
+function is `identity()`, it returns the value of its argument. Because only the
+value matters, all of these statements are completely equivalent:
+
+```{r}
+identity(6)
+
+identity(2 * 3)
+
+a <- 2
+b <- 3
+identity(a * b)
+```
+
+On the other hand, a quoting function sees the *expression* typed as argument
+rather than the value of this expression. The expression might be evaluated a
+bit later or might not be evaluated at all. The fundamental quoting function is
+`quote()`, it returns the expression ot its argument:
+
+```{r}
+quote(6)
+
+quote(2 * 3)
+
+quote(a * b)
+```
+
+In fact the action of quoting is something that all programmers are familiar
+with because this is they create strings. `"` is a quoting operator. It is a
+signal that the supplied characters are not code but text. As an R programmer,
+you are also probably familiar with the formula operator `~`. This quoting
+operator returns one or two quoted expressions. Thus the three following
+expressions are doing something similar, they are quoting their input:
+
+```{r}
+"a * b"
+
+~a * b
+
+quote(a * b)
+```
+
+The first statement returns a quoted string and the other two return quoted code
+in a formula or as a bare expression.
+
+[^1]: This is why regular functions are said to use standard evaluation unlike
+      quoting functions which use non-standard evaluation (NSE).
+
+
+### Changing the context of evaluation
+
+A quoted expression can be **evaluated** using the function `eval()`. Let's
+quote an expression that represents the subset of lowercase letters from 1 to 5,
+and evaluate this:
+
+```{r}
+x <- quote(letters[1:5])
+
+x
+
+eval(x)
+```
+
+Of course this is not very impressive, you could just type the expression
+normally to get this value. But one of R's most important feature is that you
+can change the context of evaluation to obtain different results. A context,
+also called **environment**, is basically a set that links symbols to
+values. The namespaces of packages are such context. For instance, in the
+context of the base namespace, the symbol `letters` is given the value of a
+character vector of lowercase letters. However it could mean something different
+in another context. We could create a context where `letters` represent the
+uppercase letters in reverse order! Evaluating a quoted expression in such a
+context could return a completely different result:
+
+```{r}
+context <- list(letters = rev(LETTERS))
+
+x
+
+eval(x, context)
+```
+
+Interestingly, data frames can be used as evaluation contexts. In a data frame
+context, the column names represent vectors so that you can refer to those
+columns in an expression:
+
+```{r}
+data1 <- tibble(mass = c(70, 80, 90), height = 1.6, 1.7, 1.8)
+data2 <- tibble(mass = c(75, 85, 95), height = 1.5, 1.7, 1.9)
+
+bmi_expr <- quote(mass / height^2)
+
+eval(bmi_expr, data1)
+
+eval(bmi_expr, data2)
+```
+
+In the last snippet we are creating an expression with `quote()` and we evaluate
+it manually with `eval()`. However quoting functions typically perform the
+quoting and the evaluation for you behind the scene:
+
+```{r}
+with(data1, mass / height^2)
+
+with(data2, mass / height^2)
+```
+
+For this reason quoting functions usually take a data frame as input in addition
+to user expressions so they can be evaluated in the context of the data. This is
+a powerful feature that gives R its identity as a data-oriented programming
+language. Quoting functions are everywhere in R:
+
+*   `with(data, expr)` evaluates `expr` in the context of `data`.
+
+*   `lm(formula, data)` creates a design matrix with predictors evaluated in the
+    context of `data`.
+
+*   `mutate(data, new = expr)` creates a `new` column from an expression evaluated
+    in the context of `data`.
+
+*   `ggplot(data, aes(expr))` defines the `x` aesthetic as the value of `expr`
+    evaluated in the context of `data`.
+
+In the context of the dplyr interface, quoting the arguments has two benefits:
+
+*   Operations on data frames can be expressed succinctly because
+    you don't need to repeat the name of the data frame. For example,
+    you can write `filter(df, x == 1, y == 2, z == 3)` instead of
+    `df[df$x == 1 & df$y ==2 & df$z == 3, ]`.
+
+*   dplyr can choose to compute results in a different way to base R.
+    This is important for database backends because dplyr itself doesn't
+    do any work, but instead generates the SQL that tells the database
+    what to do.
+
+Unfortunately the benefits of quoting functions do not come for free. While they
+simplify direct inputs, they make it harder to program the inputs. Quoting works
+for you when *you* use dplyr but works against you when *your functions* use
+dplyr.
+
+
+### Varying quoted inputs
+
+The issue of referential transparency to do with the difficulty of passing
+contextual variables in order to vary the inputs of quoting functions. When you
+pass variables to quoting functions they get quoted along with the rest of the
+expression.
+
+To see the problem more clearly, let's define a simple quoting function [^2]
+that pastes its inputs as a string:
+
+```{r}
+cement <- function(..., .sep = " ") {
+  strings <- map(exprs(...), as_string)
+  paste(strings, collapse = .sep)
+}
+```
+
+Compared to the regular function `paste()`, the quoting function `cement()`
+saves a bit of typing because it performs the string-quoting automatically:
+
+```{r}
+paste("it", "is", "rainy")
+
+cement(it, is, rainy)
+```
+
+Now what if we wanted to store the weather adjective in a variable? `paste()`
+has no issue on that front because it gets the value of the argument rather than
+its expression. On the other hand if we pass a variable to `cement()`, it would
+be quoted just like the other inputs and `cement()` would never get to see its
+contents:
+
+```{r}
+x <- "shiny"
+
+paste("it", "is", x)
+
+cement(it, is, x)
+```
+
+The solution to this problem is a special syntax that signals the quoting
+function that part of the argument is to be unquoted, i.e., evaluated right
+away. The ability to mix quoting and evaluation is called **quasiquotation** and
+is the main tidy eval feature.
+
+[^2]: As we will see later on `exprs()` captures the expressions of its inputs.
+      Passing `...` to `exprs()` returns a list of quoted arguments forwarded
+      through dots.
+
+
+## Quasiquotation
+
+> Put simply, quasi-quotation enables one to introduce symbols that stand for
+> a linguistic expression in a given instance and are used as that linguistic
+> expression in a different instance.
+--- [Willard van Orman Quine](https://en.wikipedia.org/wiki/Quasi-quotation)
+
+As we have seen, automatic quoting makes R and dplyr very convenient for
+interactive use but makes it difficult to refer to variable inputs. The solution
+to this problem is __quasiquotation__, which allows you to evaluate directly
+inside an expression that is otherwise quoted. Quasiquotation was coined by
+Willard van Orman Quine in the 1940s, and was adopted for programming by the
+LISP community in the 1970s. Quasiquotation is available (or will soon be) in
+all quoting functions of the tidyverse thanks to the tidy evaluation framework.
+
+
+### The bang! bang! operator
+
+The tidy eval syntax for unquoting is `!!`. Anything supplied to to this
+operator is evaluated right away and the result is substituted in place. Let's
+see `!!` in action in our `cement()` function:
+
+```{r}
+x <- "shiny"
+
+cement(it, is, !! x)
+```
+
+Even though the arguments are quoted, `!! x` signals that `x` should be
+evaluated right away. From `cement()` perspective, it's as if the user had typed
+`"shiny"` instead of `!! x`.
+
+We have seen above that the fundamental quoting function in base R is `quote()`.
+In the tidyverse, it is `expr()`. All it does is to quote its argument with
+quasiquotation support and returns it right away:
+
+```{r}
+expr(x)
+
+expr(!! x)
+```
+
+`expr()` is especially useful for debugging quasiquotation. You can wrap it
+around any expression in which you use `!!` to examine the effect of unquoting.
+Let's try it with `cement()`:
+
+```{r}
+expr(cement(it, is, !! x))
+```
+
+This technique is essential to work your way around to mastering tidy eval.
+
+
+### Creating symbols
+
+Now that we are armed with quasiquotation, let's try to program with the dplyr
+verb `mutate()`. We'll take a BMI computation as running example.
+
+```{r}
+# Rescale height
+starwars <- mutate(starwars, height = height / 100)
+
+transmute(starwars, bmi = mass / height^2)
+```
+
+Let's say we want to vary the height input. A first intuition might be to store
+the column name in a variable and unquote it. But we get an error:
+
+```{r, error = TRUE}
+x <- "height"
+
+transmute(starwars, bmi = mass / (!! x)^2)
+```
+
+The error message indicates a type error. A binary operator expected a numeric
+input but got something else. The error becomes clear if we use `expr()` to
+debug the unquoting:
+
+```{r}
+expr(transmute(starwars, bmi = mass / (!! x)^2))
+```
+
+We are unquoting a string and that's exactly what `transmute()` uses to evaluate
+the BMI. This can't work! We need to unquote something that looks like code
+instead of a string. What we are looking for is a **symbol**. A symbol is a
+string that references an object in a context. Symbols are the meat of R
+code. In `foo(bar)`, `foo` is a symbol that references a function and `bar` is a
+symbol that references some object.
+
+There are two ways of creating symbolic R code objects: by quotation or by
+construction. We already know how to create symbols by quoting. However that
+does not help us much because we face the same issue again, namely that the
+quoted symbol is a constant that can't be varied:
+
+```{r}
+quote(height)
+
+expr(height)
+```
+
+The other way is to build it out of a string using the constructor `sym()`.
+Constructors are regular functions and can be programmed with variables:
+
+```{r}
+sym("height")
+
+x <- "height"
+sym(x)
+```
+
+Let's build a symbol and try to unquote it in the transmute expression. Using
+`expr()` to examine the effect of unquoting, things are looking good:
+
+```{r}
+x <- sym("height")
+
+expr(transmute(starwars, bmi = mass / (!! x)^2))
+```
+
+And indeed it now works!
+
+```{r}
+transmute(starwars, bmi = mass / (!! x)^2)
+```
+
+
+## Creating a wrapper around a dplyr pipeline
+
+Quasiquotation is all we need to write our first wrapper function around a dplyr
+pipeline. The goal is to write reliable functions that reduce duplication in
+our data analysis code. Let's say that we often take a grouped average using
+dplyr and our scripts are littered with little pipelines that look like this:
+
+```{r}
+starwars %>%
+  group_by(species) %>%
+  summarise(avg = mean(height))
+```
+
+It would be a good idea to extract this logic into a function. It would reduce
+the risk of writing a typo and would make our code more concise as well as
+clearer if we choose a good name for this function.
+
+We know from the previous sections that this kind of naive wrapper will not
+work because the variable names will be automatically quoted:
+
+```{r, error = TRUE}
+mean_by <- function(data, var, group) {
+  data %>%
+    group_by(group) %>%
+    summarise(avg = mean(var))
+}
+
+mean_by(starwars, "species", "height")
+```
+
+* In the best case the column names they contain will be ignored. For instance `group_by()`
+  looks for a column named `group` and doesn't see the string `"species"`.
+
+* In the worst case they will be misused. For instance `summarise()` would try
+  to take the average of the string `"height"`.
+
+To avoid this, our wrapper simply needs to construct symbols from its inputs and
+unquote them in the pipeline:
+
+```{r}
+mean_by <- function(data, var, group) {
+  var <- sym(var)
+  group <- sym(group)
+
+  data %>%
+    group_by(!! group) %>%
+    summarise(avg = mean(!! var))
+}
+
+mean_by(starwars, "height", "species")
+
+mean_by(starwars, "mass", "eye_color")
+```
+
+
+### Creating your own quoting functions
+
+The wrapper that we just created is a regular function that takes strings and
+doesn't quote any of its inputs. This has the advantage that it is easy to
+program with but the inconvenient that it doesn't integrate well with the rest
+of the tidyverse verbs. Fortunately it is easy to transform the wrapper into a
+quoting function.
+
+First we need to choose which of our wrapper arguments should be quoted. Given
+the friction that quotation causes for programming, it is best to only quote
+arguments when absolutely necessary, i.e. when it makes sense to refer to data
+frame columns. In dplyr, the argument that takes a data frame (which is always
+the first argument in order to be compatible with pipes) is never quoted. We'll
+apply the same logic to our wrapper and only quote the `group` and `var`
+arguments.
+
+Tidy eval provides two functions to quote an argument supplied by the caller of
+a function. Both of those enable quasiquotation:
+
+* `enexpr()` which returns a raw expression.
+* `enquo()` which returns an expression wrapped in a **quosure**.
+
+Let's first try `enexpr()` in a simple function that does nothing but capture
+its argument and return it right away:
+
+```{r}
+quoting <- function(x) enexpr(x)
+
+x <- sym("foo")
+
+quoting(x)
+
+quoting(!! x)
+```
+
+We have in fact just reinvented `expr()`! Indeed `expr()` is a simple wrapper
+around `enexpr()`:
+
+```{r}
+dplyr::expr
+```
+
+In the same vein, `quo()` is a wrapper around `enquo()`. All it does is to
+capture the expression of its argument, store it in a quosure, and return it as
+is:
+
+```{r}
+dplyr::quo
+
+quo(x)
+
+quo(!! x)
+```
+
+A quosure is like a raw expression except that it is evaluated in the original
+context of its capture. It combines an expression (a quote) and a context (an
+enclosure) in a single object. We'll see below why it is important to keep track
+of the original context of arguments. For now, let's just use it in our pipeline
+wrapper to transform it into a quoting function. As a reminder here is the
+current definition of our function:
+
+```{r}
+mean_by <- function(data, var, group) {
+  var <- sym(var)
+  group <- sym(group)
+
+  data %>%
+    group_by(!! group) %>%
+    summarise(avg = mean(!! var))
+}
+```
+
+All we need to do is to replace the `sym()` constructor by `enquo()`:
+
+```{r}
+mean_by <- function(data, var, group) {
+  var <- enquo(var)
+  group <- enquo(group)
+
+  data %>%
+    group_by(!! group) %>%
+    summarise(avg = mean(!! var))
+}
+```
+
+The wrapper now automatically quotes its arguments. This has several
+implications:
+
+*   First the user no longer has to supply quoted strings:
+
+    ```{r}
+    mean_by(starwars, height, species)
+    ```
+
+*   Secondly, while `sym()` assumed that the supplied arguments were symbols,
+    `enquo()` captures arbitrary expressions. This is a good fit for our wrapper
+    because both `group_by()` and `summarise()` accept complex expressions:
+
+    ```{r}
+    mean_by(starwars, height * 100, as.factor(species))
+    ```
+
+*   Since our function now quotes its arguments, it is no longer programmable in
+    the usual way. If another function passes variables to `mean_by()`, it needs
+    to use quasiquotation itself. A typical composition of quoting functions
+    thus looks like a chain of quoted and unquoted arguments:
+
+    ```{r}
+    mean_by_species <- function(data, var) {
+      var <- enquo(var)
+      mean_by(data, !! var, species)
+    }
+
+    mean_by_species(starwars, height)
+    ```
+
+Thanks to `enquo()` we now have a wrapper function that quotes its inputs and
+interacts with dplyr verbs via quasiquotation. It is getting pretty close to a
+real tidyverse-like user interface! However we could still improve a few things,
+like the automatic labelling of column names which could be better. It would
+also be nice if the wrapper could accept a variable number of arguments like
+other dplyr or tidyr verbs. We'll address the latter issue first.
+
+
+### Accepting multiple arguments
+
+Whether our wrapper should take multiple grouping variables or multiple
+variables to average is a design decision that could go either way depending on
+your needs. In this tutorial we'll allow multiple grouping variables.
+
+It is relatively easy to write R functions that accept an unspecified number of
+arguments. The function just takes `...` as argument. In the body of the
+function `...` are then forwarded to another variadic function that is in charge
+of materialising the arguments. The end point is typically the list function:
+
+```{r}
+variadic <- function(...) list(...)
+
+variadic("foo", "bar")
+```
+
+Passing on arguments through dots to quoting functions is very easy. Unlike
+named arguments which need to be repeatedly quoted and unquoted, the `...`
+object can just be passed along:
+
+```{r}
+mean_by <- function(data, var, ...) {
+  var <- enquo(var)
+
+  data %>%
+    group_by(...) %>%
+    summarise(avg = mean(!! var))
+}
+```
+
+Your users can now create grouped averages for any combination of groups!
+
+```{r}
+mean_by(starwars, height, species, eye_color)
+```
+
+You can learn about more advanced ways of dealing with multiple arguments with
+`exprs()`, `quos()` and `syms()` in the section on variadic quasiquotation
+below.
+
+
+### Labelling inputs
+
+dplyr functions try their best to provide useful column names for new columns.
+This is an area where our wrapper could use some improvement:
+
+```{r}
+names(mean_by(starwars, height, as.factor(species)))
+```
+
+First note that the issue is in fact already solved for the grouping
+variables. That's a benefit from taking arguments with `...`, they accept
+optional names:
+
+```{r}
+mean_by(starwars, height, species_fct = as.factor(species))
+```
+
+However for named arguments we need to do a bit more work. We'll make use of two
+tidy eval features:
+
+*   `quo_name()` which is a helper that transforms an arbitrary expression
+    (including quosures) to a name that is suitable for data frames:
+
+    ```{r}
+    wrapper <- function(x) {
+      x <- enquo(x)
+      quo_name(x)
+    }
+
+    wrapper(foo)
+
+    wrapper(foo(bar, baz()))
+    ```
+
+*   The `:=` operator. It makes it possible to unquote on the left-hand side of
+    an argument. Since the LHS of `=` is automatically quoted, it makes sense to
+    have quasiquotation for argument names:
+
+    ```{r}
+    x <- "Column Name"
+    summarise(starwars, !! x := n())
+    ```
+
+We can give a nice default name to the column of averages by transforming the
+captured variable to a name and pasting a prefix at its front:
+
+```{r}
+mean_by <- function(data, var, ...) {
+  var <- enquo(var)
+
+  name <- quo_name(var)
+  name <- paste0("avg_", name)
+
+  data %>%
+    group_by(...) %>%
+    summarise(!! name := mean(!! var))
+}
+```
+
+We get a good name that reflects the user input, even when the argument is a
+complex expression:
+
+```{r}
+mean_by(starwars, height, species)
+
+mean_by(starwars, identity(height), species)
+```
+
+Overall the most flexible interface is `...` since they let the user specify
+custom names. But what if we want to add a prefix to the grouping variables as
+well? Then we can't just pass the `...` variable down to `group_by()`, we have
+to capture all the variables in the dots and modify their names before passing
+them on. This calls for more advanced means of working with multiple arguments.
+
+
+### Capturing and modifying arguments in `...`
+
+Up until now, we have captured *named arguments* with `enquo()`, we have
+forwarded variadic arguments by passing `...` to tidy eval functions, but we
+have yet to actually capture those arguments contained in `...`. Getting a hold
+on the expressions supplied as `...` arguments is necessary in order to make
+modifications such as changing the argument names.
+
+As we have seen arguments transiting through dots need to be materialised with
+endpoint functions such as `c()` or `list()`. Tidy eval provides two variadic
+endpoints for dots: `exprs()` and `quos()`. These functions quote all of their
+inputs and return them in a list of expressions or quosures:
+
+```{r}
+exprs(foo, bar)
+
+quos(baz, bam)
+```
+
+Thanks to the magic of `...` forwarding, `exprs()` and `quos()` will capture all
+arguments passed through dots:
+
+```{r}
+quoting <- function(...) {
+  exprs(foo, ...)
+}
+
+quoting(bar(baz))
+```
+
+We'll first experiment with a simple `group_by()` wrapper before applying our
+new knowledge to the `mean_by()` wrapper. This wrapper will prefix all grouping
+variables with `grp_`. To achieve this there are two problems to solve:
+modifying the names, and forwarding the list of captured arguments to
+`group_by()` once we are done changing the names. Let's start this function with
+a bare skeleton. It will take a data frame, a prefix for the group names, and an
+undefined number of grouping arguments:
+
+```{r}
+prefixed_group_by <- function(data, prefix, ...) {
+  groups <- quos(...)
+  groups
+}
+
+groups <- prefixed_group_by(starwars, "grp_", as.factor(species), color = eye_color)
+
+groups
+
+names(groups)
+```
+
+We have supplied two arguments as grouping variable. The first is an unnamed
+complex expression, the second is a named symbol. The first thing to do is to
+give a default name to arguments. One way to obtain default names would be to
+map `quo_name()` over the relevant elements but there is an easier way. `quos()`
+will do it for you if you switch on the `.named` argument:
+
+```{r}
+quos <- quos(foo(bar), baz = foo(), .named = TRUE)
+names(quos)
+```
+
+We are now in a good position for adding a prefix to the names of captured
+arguments:
+
+```{r}
+prefixed_group_by <- function(data, prefix, ...) {
+  groups <- quos(..., .named = TRUE)
+  names(groups) <- paste0(prefix, names(groups))
+  groups
+}
+
+groups <- prefixed_group_by(starwars, "grp_", as.factor(species), color = eye_color)
+names(groups)
+```
+
+Alright! We only have one last problem to solve. We need a way to forward this
+list of arguments to `group_by()`. Unquoting the list with `!!` is not helpful
+here because `group_by()` expects separate arguments and wouldn't know what to
+do with a whole list. This leads us to `!!!`, one of the most handy features of
+tidy eval.
+
+
+### Unquote-splicing arguments with `!!!`
+
+The __unquote-splicing__ operator `!!!` is a variant of simple unquoting. Just
+like `!!`, it evaluates its right-hand side right away. The difference is in the
+way it substitutes the result in the surrounding call:
+
+*   `!!` substitutes in place:
+
+    ```{r}
+    expr(call(!! 1:5))
+    ```
+
+*   `!!!` takes a vector and substitutes all its elements in the call:
+
+    ```{r}
+    expr(call(!!! 1:5))
+    ```
+
+This is exactly what we need to forward a list of captured arguments to
+`group_by()`!
+
+```{r}
+prefixed_group_by <- function(data, prefix, ...) {
+  groups <- quos(..., .named = TRUE)
+  names(groups) <- paste0(prefix, names(groups))
+
+  group_by(data, !!! groups)
+}
+
+prefixed_group_by(starwars, "grp_", as.factor(species), color = eye_color)
+```
+
+Modifying `mean_by()` to automatically prefix the grouping factors is now
+child's play:
+
+```{r}
+mean_by <- function(data, var, ...) {
+  var <- enquo(var)
+
+  name <- quo_name(var)
+  name <- paste0("avg_", name)
+
+  data %>%
+    prefixed_group_by("grp_", ...) %>%
+    summarise(!! name := mean(!! var))
+}
+
+mean_by(starwars, height, species, eye = eye_color)
+```
+
+
+### Wrapping it up
+
+In order to write our little wrapper, we have learned to:
+
+*   Quote R code with `quote()` and `expr()` and construct symbols with `sym()`.
+
+*   Capture named arguments with `enquo()` and `...` arguments with `quos()`.
+
+*   Unquote single arguments with `!!` and multiple arguments with `!!!`.
+
+*   Use `:=` to enable `!!` on the left-hand side of a named argument.
+
+*   Debug the unquoting by wrapping `expr()` around an expression.
+
+*   Use `quo_name()` and `quos(.named = TRUE)` to provide default names to
+    captured arguments.
+
+This set of techniques will get you a long way as quasiquotation is really the
+meat of programming with tidy eval. `enquo()` and `quos()` return quosures that
+are more reliable than bare expressions but you don't have to understand how
+quosures work or why they are needed to effectively use tidy eval.
+
+When you feel ready, you can learn about the concept of quosures. It will
+improve your understanding of R programming and you will gain knowledge that can
+be applied to R functions. Quosures and closures (the technical name of R
+functions) have a lot in common!
+
+
+## Where do quoting verbs find things?
+
+### Contexts and hierarchical ambiguity
+
+### Solving ambiguity with quasiquotation and the `.data` pronoun
+
+### Raw expressions versus contextual expressions (quosures)
