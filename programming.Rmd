@@ -26,7 +26,7 @@ set.seed(1014)
 </style>
 
 <div class=r-comment>
-<p>Comments are put inside of div tags like so:
+<p>Comments are in a blue font and in the .rmd file are put inside of div tags like so:
 <pre>
 &lt;div class=r-comment&gt;
 a comment
@@ -35,27 +35,28 @@ a comment
 <p> To turn off the comments just look for the &lt;style&gt; tag at beginning
 of .rmd file and change display:contents; to display:none;
 <p> To find comments in .rmd file search for &lt;div class=r-comment&gt;
+<p> Note everything in here is in IMHO, of course :-)
 </div>
 
 <div class=r-comment>
 <p>General comment
-<p>The thing I have found about writing papers/courses is that it is hard to put yourself in a frame of mind of the read who know much less about the topic than you.
+<p>The thing I have found about writing papers/courses is that it is hard to put yourself in a frame of mind of the reader who knows much less about the topic than you.
 <p>So with that in mind this is what I try to do, besides checking for technical correctness.
 <ul>
 <li>point out forward references that will be cleared up later
 <li>no undefined terms, even if there is only a quick phrase that points out the details are not necessary. A sees an undefined term will sometimes think they missed something and try to "look it up" and be frustrated when the can't find it. The should be able to get all the basics you are trying to cover from just this paper.
 
-</ul
-</div>
+</ul>
 
-<div class=r-comment>
-<p>"quoting function" is not a standard R term, is it? If a reader looked for R quoting functions they would find no details about them. You should make that clear to reader. It would be better to use a standard R term for this but I don't think there is one.
+<p>"quoting function" is not a standard R term, is it? If a reader searched for R quoting functions they would find no details about them. You should make that clear to reader. It would be better to use a standard R term for this.
 
-<p>Isn't a dplyr verb the same as a dplyr function? For the reader to understand what you are talking about they would have to understand grammars and have read the doc's about how dplyr is a grammer for data access/manipulation. That's a lot to ask and it really isn't a level of knowledge need to make use of dplyr.
+<p>Isn't a dplyr verb the same as a dplyr function? For the reader to understand what you are talking about they would have to understand grammars and have read the doc's about how dplyr is a grammer for data access/manipulation. That's a lot to ask and it really isn't a level of knowledge needed to make programs with dplyr.
 
-<p>But since verb is standard R term that would be better to use than quoting function.
+<p>But since *verb* is standard R term that would be better to use that than quoting function.
 
-<p>BTW when I see the term "quoting functions" I thing of quote(), rlang::quo and so on. So as is I think quoting functions is a confusing description.
+<p>BTW when I see the term "quoting functions" I thing of quote(), rlang::quo() and so on. So as is I think quoting functions is a confusing description. Quoting functions quote expressions.
+
+<p>Also I don't think the intro explains why you would want to program with dplyr.
 </div>
 
 Programming with dplyr is about making functions that are easier to use. dplyr::select is an example of a kind of function you might want to make because the syntax of calling it is just easier to digest and understand, once you get used to it.
@@ -68,76 +69,149 @@ t <- tibble::tribble(
 # just literal table and column names are needed
 select(t, size = a)
 ```
-You can pick off columns from a data.frame without having to use filters or even quotation marks.
+You can pick off and even change the names of columns from a data.frame without having to use filters or even quotation marks.
 
 But programming with dplyr requires a bit of special knowledge because most dplyr
-functions are not like the **regular** functions you are used to writing. In fact to distinguish them from regular functions we call them verbs. 
+functions are not like the *regular* functions you are used to writing. In fact to distinguish them from regular functions we call them verbs. 
 
-The thing that distinguishes verbs from regular functions is in the way verbs treat their arguments. Unforunately R documentation doesn't tell you if a function is a verb or regular function. That distinction doesn't matter except when you are using them to do dplyr programming.
+The thing that distinguishes verbs from regular functions is in the way verbs treat their arguments. Unforunately R documentation doesn't tell you if a function is a verb or regular function. But that distinction doesn't matter except when you are using them to do dplyr programming.
 
+<div class=r-comment>
+<p>Isn't "tidy eval" the term typically used to describe how evaluation of quotes is done?. 
+<p>Changed "tidy evaluation" to "tidy eval"
+</div>
 
-
-We will call these **quoting functions**. That's not a standard term and the documentation for R doesn't tell you if a function is a standard or quoting function. But quoting functions are what make "programming on the language" possible so we need some way to refer to them. 
-
-In this vignette you will learn about quoting functions, what challenges they pose for
-programming, and how **tidy evaluation** solves those problems.
+In this vignette you will learn about verbs, what challenges they pose for
+programming, and how **tidy eval** solves those problems.
 
 
 ## Introduction
 
-### Regular functions versus quoting functions
+<div class=r-comment>
+quoting function changed to verb
+</div>
 
-R functions can be categorised in two broad categories: regular functions and
-quoting functions. These functions differ in the way they get their arguments.
-Regular functions only see values. It does not matter what the expression
-supplied as argument is or which variables it involves. The value is computed
-following the standard rules of evaluation [^1]. The fundamental regular
-function is `identity()`, it returns the value of its argument. Because only the
-value matters, all of these statements are completely equivalent:
+### Regular functions versus verbs
+<div class=r-comment>
+<p>quoting functions changed to verbs
+<p>You don't specify what you mean by a value. There are lots of abstractions and 
+in tidy eval so it pays to me specific.
 
-```{r}
-identity(6)
+<p>Changed language so catagory is not used twice in sentence.
 
-identity(2 * 3)
+<p>I don't think the examples in this section are apropos to the topic. The core
+of the topic is how regular functions see their arguments vs. how verbs do. The 
+examples show how to quote expressions work not the differences between regular 
+functions and verbs.
 
+<p>I understand using `quote()` to introduce quoting functions because it is the
+least complicted of the quoting functions. However it is not really useful for 
+quoting arguments and neither is `enquote()` which is the focus of the differences
+between regular functions and verbs.
+
+<p>And as an aside will quote and enquote really be that useful when programming dplyr?
+
+<p>I think your plan is to show how quote works than compare and contrast it to quo and enquo 
+latter in the paper. (I'm making comments as I read the paper... I think that does a better
+job of reflecting what might be in a reader mind as they read the paper). But I think it is 
+bad to introduce concepts/functions that in the end will not be necessary for the topic 
+being taught. 
+
+```{r q1}
+f1 <- function(arg1) { print(quote(arg1))}
+f2 <- function(arg1) { print(enquote(arg1))}
+f3 <- function(arg1) { print(rlang::enquo(arg1))}
+
+a <- 1
+b <- 2
+f1(a + b)
+f2(a + b)
+f3(a + b)
+```
+<p>Only f3 produces an unevaluted quote of what is passed into arg1.
+
+<p>So I think this introduction has to introduce rlang::enquo because that is was is 
+going to be at the heart of using quotes. 
+
+<p>I redid the section to reflect this. Notice there is no need to go into any details about
+`enquo` just so the results it produces.
+
+I'm glad I went through this... before I did I had missed some of the important details of quote, enquote and enquo.
+</div>
+
+
+
+R functions can be broadly categorised as regular functions or
+verbs. They differ in the way they see their arguments.
+
+<div class=r-comment>
+<p>"see" better description than "treat"
+</div>
+
+Regular functions only see the value produced after R uses 
+standard evaluation to compute it's result. So, for example this function:
+
+`sum(a * 2, a + 8)`
+
+only sees the result of computing `a * 2` and `a + 8`, which is number. The function
+has no idea of what kind of expression was passed as an argument.
+
+<div class-r-comment>
+good to include link to terms that the reader might want to look up... it just makes
+things for convienent for the reader.
+</div>
+
+We can see that in the following examples. `identical()` is an R function, not a verb, from the base package. It tests to see if two expressions are the same by value. Because `identical` is a regular function it uses standard evaluation of it's arguments before it compares them.
+https://stat.ethz.ch/R-manual/R-devel/library/base/html/identical.html
+
+```{r identical1}
 a <- 2
 b <- 3
-identity(a * b)
+identical(c(a,3), c(2, b))
 ```
 
-On the other hand, a quoting function sees the *expression* typed as argument
-rather than the value of this expression. The expression might be evaluated a
-bit later or might not be evaluated at all. The fundamental quoting function is
-`quote()`, it returns the expression ot its argument:
+In this example R's standard evaluation is done on the two arguments before they are compared. But after evaluation both arguments are the same, `c(2,3)`, so `identical` returns TRUE.
 
-```{r}
-quote(6)
+It would be interesting to see a function similar to `identitical` that is a verb. No such function exists so we will have to make one. In order to do this we will need a function from the rlang package named `enquo`. http://rlang.tidyverse.org/reference/quosure.html
 
-quote(2 * 3)
+`enquo` is one of a number of  quoting functions provided by R. It comes from the
+rlang package and it is used specifically to quote an argument of a function. Quoting
+in programming means taking an expression and turning into an object this is similar to a string.
 
-quote(a * b)
+This is our identicalv verb...meaning is works like `identical` but is does not let R apply it's 
+standard evaluation to an argument
+
+```{r identicalv}
+identicalv <- function(arg1, arg2) {
+	identical(rlang::enquo(arg1), rlang::enquo(arg2))
+}
+a <- 2
+b <- 3
+identicalv(c(a,3), c(2,b))
 ```
 
-In fact the action of quoting is something that all programmers are familiar
-with because this is they create strings. `"` is a quoting operator. It is a
-signal that the supplied characters are not code but text. As an R programmer,
-you are also probably familiar with the formula operator `~`. This quoting
-operator returns one or two quoted expressions. Thus the three following
-expressions are doing something similar, they are quoting their input:
+Putting the same arguments into `identicalv` as we did `identical` returns a false because it sees
+arg1 and arg2 as being different `strings`. We can change identical` a little bit to see why this is.
 
-```{r}
-"a * b"
-
-~a * b
-
-quote(a * b)
+```{r identicalv2}
+identicalv <- function(arg1, arg2) {
+	# print out what rlang::enquo produces as a string
+	print(as.character(rlang::enquo(arg1)))
+	print(as.character(rlang::enquo(arg2)))
+	identical(rlang::enquo(arg1), rlang::enquo(arg2))
+}
+a <- 2
+b <- 3
+identicalv(c(a,3), c(2,b))
 ```
 
-The first statement returns a quoted string and the other two return quoted code
-in a formula or as a bare expression.
+As you an see the object produced by `rlang::enquo` appears to be a character
+vector. However this object is much more than a character vector and we'll see
+that later in this paper.
 
-[^1]: This is why regular functions are said to use standard evaluation unlike
-      quoting functions which use non-standard evaluation (NSE).
+
+[^1]: The difference between behavior of `identical` and `identicalv`  is why regular functions are said to use standard evaluation unlike
+      verbs which use non-standard evaluation (NSE).
 
 
 ### Changing the context of evaluation

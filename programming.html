@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+<title>Programming with dplyr</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Programming with dplyr</h1>
+
+
+
+<!-- to hide comments change "contents" to "none" -->
+<style>
+.r-comment {
+   color: blue;
+    display:contents;
+    background-color:#FCF3CF;
+}
+</style>
+<div class="r-comment">
+<p>
+Comments are in a blue font and in the .rmd file are put inside of div tags like so:
+<pre>
+&lt;div class=r-comment&gt;
+a comment
+&lt;/div&gt;
+</pre>
+<p>
+To turn off the comments just look for the &lt;style&gt; tag at beginning of .rmd file and change display:contents; to display:none;
+<p>
+To find comments in .rmd file search for &lt;div class=r-comment&gt;
+<p>
+Note everything in here is in IMHO, of course :-)
+</div>
+<div class="r-comment">
+<p>
+General comment
+<p>
+The thing I have found about writing papers/courses is that it is hard to put yourself in a frame of mind of the reader who knows much less about the topic than you.
+<p>
+So with that in mind this is what I try to do, besides checking for technical correctness.
+<ul>
+<li>
+point out forward references that will be cleared up later
+<li>
+<p>no undefined terms, even if there is only a quick phrase that points out the details are not necessary. A sees an undefined term will sometimes think they missed something and try to “look it up” and be frustrated when the can’t find it. The should be able to get all the basics you are trying to cover from just this paper.</p>
+</ul>
+<p>
+<p>“quoting function” is not a standard R term, is it? If a reader searched for R quoting functions they would find no details about them. You should make that clear to reader. It would be better to use a standard R term for this.</p>
+<p>
+<p>Isn’t a dplyr verb the same as a dplyr function? For the reader to understand what you are talking about they would have to understand grammars and have read the doc’s about how dplyr is a grammer for data access/manipulation. That’s a lot to ask and it really isn’t a level of knowledge needed to make programs with dplyr.</p>
+<p>
+<p>But since <em>verb</em> is standard R term that would be better to use that than quoting function.</p>
+<p>
+<p>BTW when I see the term “quoting functions” I thing of quote(), rlang::quo() and so on. So as is I think quoting functions is a confusing description. Quoting functions quote expressions.</p>
+<p>
+Also I don’t think the intro explains why you would want to program with dplyr.
+</div>
+<p>Programming with dplyr is about making functions that are easier to use. dplyr::select is an example of a kind of function you might want to make because the syntax of calling it is just easier to digest and understand, once you get used to it.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">t &lt;-<span class="st"> </span>tibble<span class="op">::</span><span class="kw">tribble</span>(
+    <span class="op">~</span>a, <span class="op">~</span>b,
+    <span class="dv">1</span>, <span class="dv">2</span>
+)
+<span class="co"># just literal table and column names are needed</span>
+<span class="kw">select</span>(t, <span class="dt">size =</span> a)
+<span class="co">#&gt; # A tibble: 1 x 1</span>
+<span class="co">#&gt;    size</span>
+<span class="co">#&gt;   &lt;dbl&gt;</span>
+<span class="co">#&gt; 1     1</span></code></pre></div>
+<p>You can pick off and even change the names of columns from a data.frame without having to use filters or even quotation marks.</p>
+<p>But programming with dplyr requires a bit of special knowledge because most dplyr functions are not like the <em>regular</em> functions you are used to writing. In fact to distinguish them from regular functions we call them verbs.</p>
+<p>The thing that distinguishes verbs from regular functions is in the way verbs treat their arguments. Unforunately R documentation doesn’t tell you if a function is a verb or regular function. But that distinction doesn’t matter except when you are using them to do dplyr programming.</p>
+<div class="r-comment">
+<p>
+Isn’t “tidy eval” the term typically used to describe how evaluation of quotes is done?.
+<p>
+Changed “tidy evaluation” to “tidy eval”
+</div>
+<p>In this vignette you will learn about verbs, what challenges they pose for programming, and how <strong>tidy eval</strong> solves those problems.</p>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<div class="r-comment">
+<p>quoting function changed to verb</p>
+</div>
+<div id="regular-functions-versus-verbs" class="section level3">
+<h3>Regular functions versus verbs</h3>
+<div class="r-comment">
+<p>
+quoting functions changed to verbs
+<p>
+<p>You don’t specify what you mean by a value. There are lots of abstractions and in tidy eval so it pays to me specific.</p>
+<p>
+<p>Changed language so catagory is not used twice in sentence.</p>
+<p>
+<p>I don’t think the examples in this section are apropos to the topic. The core of the topic is how regular functions see their arguments vs. how verbs do. The examples show how to quote expressions work not the differences between regular functions and verbs.</p>
+<p>
+<p>I understand using <code>quote()</code> to introduce quoting functions because it is the least complicted of the quoting functions. However it is not really useful for quoting arguments and neither is <code>enquote()</code> which is the focus of the differences between regular functions and verbs.</p>
+<p>
+<p>And as an aside will quote and enquote really be that useful when programming dplyr?</p>
+<p>
+<p>I think your plan is to show how quote works than compare and contrast it to quo and enquo latter in the paper. (I’m making comments as I read the paper… I think that does a better job of reflecting what might be in a reader mind as they read the paper). But I think it is bad to introduce concepts/functions that in the end will not be necessary for the topic being taught.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">f1 &lt;-<span class="st"> </span><span class="cf">function</span>(arg1) { <span class="kw">print</span>(<span class="kw">quote</span>(arg1))}
+f2 &lt;-<span class="st"> </span><span class="cf">function</span>(arg1) { <span class="kw">print</span>(<span class="kw">enquote</span>(arg1))}
+f3 &lt;-<span class="st"> </span><span class="cf">function</span>(arg1) { <span class="kw">print</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg1))}
+
+a &lt;-<span class="st"> </span><span class="dv">1</span>
+b &lt;-<span class="st"> </span><span class="dv">2</span>
+<span class="kw">f1</span>(a <span class="op">+</span><span class="st"> </span>b)
+<span class="co">#&gt; arg1</span>
+<span class="kw">f2</span>(a <span class="op">+</span><span class="st"> </span>b)
+<span class="co">#&gt; quote(3)</span>
+<span class="kw">f3</span>(a <span class="op">+</span><span class="st"> </span>b)
+<span class="co">#&gt; &lt;quosure: global&gt;</span>
+<span class="co">#&gt; ~a + b</span></code></pre></div>
+<p>
+<p>Only f3 produces an unevaluted quote of what is passed into arg1.</p>
+<p>
+<p>So I think this introduction has to introduce rlang::enquo because that is was is going to be at the heart of using quotes.</p>
+<p>
+<p>I redid the section to reflect this. Notice there is no need to go into any details about <code>enquo</code> just so the results it produces.</p>
+I’m glad I went through this… before I did I had missed some of the important details of quote, enquote and enquo.
+</div>
+<p>R functions can be broadly categorised as regular functions or verbs. They differ in the way they see their arguments.</p>
+<div class="r-comment">
+<p>
+“see” better description than “treat”
+</div>
+<p>Regular functions only see the value produced after R uses standard evaluation to compute it’s result. So, for example this function:</p>
+<p><code>sum(a * 2, a + 8)</code></p>
+<p>only sees the result of computing <code>a * 2</code> and <code>a + 8</code>, which is number. The function has no idea of what kind of expression was passed as an argument.</p>
+<div class-r-comment>
+<p>good to include link to terms that the reader might want to look up… it just makes things for convienent for the reader.</p>
+</div>
+<p>We can see that in the following examples. <code>identical()</code> is an R function, not a verb, from the base package. It tests to see if two expressions are the same by value. Because <code>identical</code> is a regular function it uses standard evaluation of it’s arguments before it compares them. <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/identical.html" class="uri">https://stat.ethz.ch/R-manual/R-devel/library/base/html/identical.html</a></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">a &lt;-<span class="st"> </span><span class="dv">2</span>
+b &lt;-<span class="st"> </span><span class="dv">3</span>
+<span class="kw">identical</span>(<span class="kw">c</span>(a,<span class="dv">3</span>), <span class="kw">c</span>(<span class="dv">2</span>, b))
+<span class="co">#&gt; [1] TRUE</span></code></pre></div>
+<p>In this example R’s standard evaluation is done on the two arguments before they are compared. But after evaluation both arguments are the same, <code>c(2,3)</code>, so <code>identical</code> returns TRUE.</p>
+<p>It would be interesting to see a function similar to <code>identitical</code> that is a verb. No such function exists so we will have to make one. In order to do this we will need a function from the rlang package named <code>enquo</code>. <a href="http://rlang.tidyverse.org/reference/quosure.html" class="uri">http://rlang.tidyverse.org/reference/quosure.html</a></p>
+<p><code>enquo</code> is one of a number of quoting functions provided by R. It comes from the rlang package and it is used specifically to quote an argument of a function. Quoting in programming means taking an expression and turning into an object this is similar to a string. We’ll cover more details about <code>enquo</code> later in this paper.</p>
+<p>This is our identicalv verb…meaning is works like <code>identical</code> but is does not let R apply it’s standard evaluation to an argument</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">identicalv &lt;-<span class="st"> </span><span class="cf">function</span>(arg1, arg2) {
+    <span class="kw">identical</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg1), rlang<span class="op">::</span><span class="kw">enquo</span>(arg2))
+}
+a &lt;-<span class="st"> </span><span class="dv">2</span>
+b &lt;-<span class="st"> </span><span class="dv">3</span>
+<span class="kw">identicalv</span>(<span class="kw">c</span>(a,<span class="dv">3</span>), <span class="kw">c</span>(<span class="dv">2</span>,b))
+<span class="co">#&gt; [1] FALSE</span></code></pre></div>
+<p>Putting the same arguments into <code>identicalv</code> as we did <code>identical</code> returns a false because it sees arg1 and arg2 as being different <code>strings</code>. We can change identical` a little bit to see why this is.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">identicalv &lt;-<span class="st"> </span><span class="cf">function</span>(arg1, arg2) {
+    <span class="kw">print</span>(<span class="kw">as.character</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg1)))
+    <span class="kw">print</span>(<span class="kw">as.character</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg2)))
+    <span class="kw">identical</span>(rlang<span class="op">::</span><span class="kw">enquo</span>(arg1), rlang<span class="op">::</span><span class="kw">enquo</span>(arg2))
+}
+a &lt;-<span class="st"> </span><span class="dv">2</span>
+b &lt;-<span class="st"> </span><span class="dv">3</span>
+<span class="kw">identicalv</span>(<span class="kw">c</span>(a,<span class="dv">3</span>), <span class="kw">c</span>(<span class="dv">2</span>,b))
+<span class="co">#&gt; [1] &quot;~&quot;       &quot;c(a, 3)&quot;</span>
+<span class="co">#&gt; [1] &quot;~&quot;       &quot;c(2, b)&quot;</span>
+<span class="co">#&gt; [1] FALSE</span></code></pre></div>
+<p>On the other hand, a quoting function sees the <em>expression</em> typed as argument rather than the value of this expression. The expression might be evaluated a bit later or might not be evaluated at all. The fundamental quoting function is <code>quote()</code>, it returns the expression ot its argument:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quote</span>(<span class="dv">6</span>)
+<span class="co">#&gt; [1] 6</span>
+
+<span class="kw">quote</span>(<span class="dv">2</span> <span class="op">*</span><span class="st"> </span><span class="dv">3</span>)
+<span class="co">#&gt; 2 * 3</span>
+
+<span class="kw">quote</span>(a <span class="op">*</span><span class="st"> </span>b)
+<span class="co">#&gt; a * b</span></code></pre></div>
+<p>In fact the action of quoting is something that all programmers are familiar with because this is they create strings. <code>&quot;</code> is a quoting operator. It is a signal that the supplied characters are not code but text. As an R programmer, you are also probably familiar with the formula operator <code>~</code>. This quoting operator returns one or two quoted expressions. Thus the three following expressions are doing something similar, they are quoting their input:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="st">&quot;a * b&quot;</span>
+<span class="co">#&gt; [1] &quot;a * b&quot;</span>
+
+<span class="op">~</span>a <span class="op">*</span><span class="st"> </span>b
+<span class="co">#&gt; ~a * b</span>
+
+<span class="kw">quote</span>(a <span class="op">*</span><span class="st"> </span>b)
+<span class="co">#&gt; a * b</span></code></pre></div>
+<p>The first statement returns a quoted string and the other two return quoted code in a formula or as a bare expression.</p>
+</div>
+<div id="changing-the-context-of-evaluation" class="section level3">
+<h3>Changing the context of evaluation</h3>
+<p>A quoted expression can be <strong>evaluated</strong> using the function <code>eval()</code>. Let’s quote an expression that represents the subset of lowercase letters from 1 to 5, and evaluate this:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span><span class="kw">quote</span>(letters[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>])
+
+x
+<span class="co">#&gt; letters[1:5]</span>
+
+<span class="kw">eval</span>(x)
+<span class="co">#&gt; [1] &quot;a&quot; &quot;b&quot; &quot;c&quot; &quot;d&quot; &quot;e&quot;</span></code></pre></div>
+<p>Of course this is not very impressive, you could just type the expression normally to get this value. But one of R’s most important feature is that you can change the context of evaluation to obtain different results. A context, also called <strong>environment</strong>, is basically a set that links symbols to values. The namespaces of packages are such context. For instance, in the context of the base namespace, the symbol <code>letters</code> is given the value of a character vector of lowercase letters. However it could mean something different in another context. We could create a context where <code>letters</code> represent the uppercase letters in reverse order! Evaluating a quoted expression in such a context could return a completely different result:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">context &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">letters =</span> <span class="kw">rev</span>(LETTERS))
+
+x
+<span class="co">#&gt; letters[1:5]</span>
+
+<span class="kw">eval</span>(x, context)
+<span class="co">#&gt; [1] &quot;Z&quot; &quot;Y&quot; &quot;X&quot; &quot;W&quot; &quot;V&quot;</span></code></pre></div>
+<p>Interestingly, data frames can be used as evaluation contexts. In a data frame context, the column names represent vectors so that you can refer to those columns in an expression:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">data1 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">mass =</span> <span class="kw">c</span>(<span class="dv">70</span>, <span class="dv">80</span>, <span class="dv">90</span>), <span class="dt">height =</span> <span class="fl">1.6</span>, <span class="fl">1.7</span>, <span class="fl">1.8</span>)
+data2 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">mass =</span> <span class="kw">c</span>(<span class="dv">75</span>, <span class="dv">85</span>, <span class="dv">95</span>), <span class="dt">height =</span> <span class="fl">1.5</span>, <span class="fl">1.7</span>, <span class="fl">1.9</span>)
+
+bmi_expr &lt;-<span class="st"> </span><span class="kw">quote</span>(mass <span class="op">/</span><span class="st"> </span>height<span class="op">^</span><span class="dv">2</span>)
+
+<span class="kw">eval</span>(bmi_expr, data1)
+<span class="co">#&gt; [1] 27.34375 31.25000 35.15625</span>
+
+<span class="kw">eval</span>(bmi_expr, data2)
+<span class="co">#&gt; [1] 33.33333 37.77778 42.22222</span></code></pre></div>
+<p>In the last snippet we are creating an expression with <code>quote()</code> and we evaluate it manually with <code>eval()</code>. However quoting functions typically perform the quoting and the evaluation for you behind the scene:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">with</span>(data1, mass <span class="op">/</span><span class="st"> </span>height<span class="op">^</span><span class="dv">2</span>)
+<span class="co">#&gt; [1] 27.34375 31.25000 35.15625</span>
+
+<span class="kw">with</span>(data2, mass <span class="op">/</span><span class="st"> </span>height<span class="op">^</span><span class="dv">2</span>)
+<span class="co">#&gt; [1] 33.33333 37.77778 42.22222</span></code></pre></div>
+<p>For this reason quoting functions usually take a data frame as input in addition to user expressions so they can be evaluated in the context of the data. This is a powerful feature that gives R its identity as a data-oriented programming language. Quoting functions are everywhere in R:</p>
+<ul>
+<li><p><code>with(data, expr)</code> evaluates <code>expr</code> in the context of <code>data</code>.</p></li>
+<li><p><code>lm(formula, data)</code> creates a design matrix with predictors evaluated in the context of <code>data</code>.</p></li>
+<li><p><code>mutate(data, new = expr)</code> creates a <code>new</code> column from an expression evaluated in the context of <code>data</code>.</p></li>
+<li><p><code>ggplot(data, aes(expr))</code> defines the <code>x</code> aesthetic as the value of <code>expr</code> evaluated in the context of <code>data</code>.</p></li>
+</ul>
+<p>In the context of the dplyr interface, quoting the arguments has two benefits:</p>
+<ul>
+<li><p>Operations on data frames can be expressed succinctly because you don’t need to repeat the name of the data frame. For example, you can write <code>filter(df, x == 1, y == 2, z == 3)</code> instead of <code>df[df$x == 1 &amp; df$y ==2 &amp; df$z == 3, ]</code>.</p></li>
+<li><p>dplyr can choose to compute results in a different way to base R. This is important for database backends because dplyr itself doesn’t do any work, but instead generates the SQL that tells the database what to do.</p></li>
+</ul>
+<p>Unfortunately the benefits of quoting functions do not come for free. While they simplify direct inputs, they make it harder to program the inputs. Quoting works for you when <em>you</em> use dplyr but works against you when <em>your functions</em> use dplyr.</p>
+</div>
+<div id="varying-quoted-inputs" class="section level3">
+<h3>Varying quoted inputs</h3>
+<p>The issue of referential transparency to do with the difficulty of passing contextual variables in order to vary the inputs of quoting functions. When you pass variables to quoting functions they get quoted along with the rest of the expression.</p>
+<p>To see the problem more clearly, let’s define a simple quoting function <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> that pastes its inputs as a string:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cement &lt;-<span class="st"> </span><span class="cf">function</span>(..., <span class="dt">.sep =</span> <span class="st">&quot; &quot;</span>) {
+  strings &lt;-<span class="st"> </span><span class="kw">map</span>(<span class="kw">exprs</span>(...), as_string)
+  <span class="kw">paste</span>(strings, <span class="dt">collapse =</span> .sep)
+}</code></pre></div>
+<p>Compared to the regular function <code>paste()</code>, the quoting function <code>cement()</code> saves a bit of typing because it performs the string-quoting automatically:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">paste</span>(<span class="st">&quot;it&quot;</span>, <span class="st">&quot;is&quot;</span>, <span class="st">&quot;rainy&quot;</span>)
+<span class="co">#&gt; [1] &quot;it is rainy&quot;</span>
+
+<span class="kw">cement</span>(it, is, rainy)
+<span class="co">#&gt; [1] &quot;it is rainy&quot;</span></code></pre></div>
+<p>Now what if we wanted to store the weather adjective in a variable? <code>paste()</code> has no issue on that front because it gets the value of the argument rather than its expression. On the other hand if we pass a variable to <code>cement()</code>, it would be quoted just like the other inputs and <code>cement()</code> would never get to see its contents:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> &quot;shiny&quot;</span>
+
+<span class="kw">paste</span>(<span class="st">&quot;it&quot;</span>, <span class="st">&quot;is&quot;</span>, x)
+<span class="co">#&gt; [1] &quot;it is shiny&quot;</span>
+
+<span class="kw">cement</span>(it, is, x)
+<span class="co">#&gt; [1] &quot;it is x&quot;</span></code></pre></div>
+<p>The solution to this problem is a special syntax that signals the quoting function that part of the argument is to be unquoted, i.e., evaluated right away. The ability to mix quoting and evaluation is called <strong>quasiquotation</strong> and is the main tidy eval feature.</p>
+</div>
+</div>
+<div id="quasiquotation" class="section level2">
+<h2>Quasiquotation</h2>
+<blockquote>
+<p>Put simply, quasi-quotation enables one to introduce symbols that stand for a linguistic expression in a given instance and are used as that linguistic expression in a different instance. — <a href="https://en.wikipedia.org/wiki/Quasi-quotation">Willard van Orman Quine</a></p>
+</blockquote>
+<p>As we have seen, automatic quoting makes R and dplyr very convenient for interactive use but makes it difficult to refer to variable inputs. The solution to this problem is <strong>quasiquotation</strong>, which allows you to evaluate directly inside an expression that is otherwise quoted. Quasiquotation was coined by Willard van Orman Quine in the 1940s, and was adopted for programming by the LISP community in the 1970s. Quasiquotation is available (or will soon be) in all quoting functions of the tidyverse thanks to the tidy evaluation framework.</p>
+<div id="the-bang-bang-operator" class="section level3">
+<h3>The bang! bang! operator</h3>
+<p>The tidy eval syntax for unquoting is <code>!!</code>. Anything supplied to to this operator is evaluated right away and the result is substituted in place. Let’s see <code>!!</code> in action in our <code>cement()</code> function:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> &quot;shiny&quot;</span>
+
+<span class="kw">cement</span>(it, is, <span class="op">!!</span><span class="st"> </span>x)
+<span class="co">#&gt; [1] &quot;it is shiny&quot;</span></code></pre></div>
+<p>Even though the arguments are quoted, <code>!! x</code> signals that <code>x</code> should be evaluated right away. From <code>cement()</code> perspective, it’s as if the user had typed <code>&quot;shiny&quot;</code> instead of <code>!! x</code>.</p>
+<p>We have seen above that the fundamental quoting function in base R is <code>quote()</code>. In the tidyverse, it is <code>expr()</code>. All it does is to quote its argument with quasiquotation support and returns it right away:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">expr</span>(x)
+<span class="co">#&gt; x</span>
+
+<span class="kw">expr</span>(<span class="op">!!</span><span class="st"> </span>x)
+<span class="co">#&gt; [1] &quot;shiny&quot;</span></code></pre></div>
+<p><code>expr()</code> is especially useful for debugging quasiquotation. You can wrap it around any expression in which you use <code>!!</code> to examine the effect of unquoting. Let’s try it with <code>cement()</code>:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">expr</span>(<span class="kw">cement</span>(it, is, <span class="op">!!</span><span class="st"> </span>x))
+<span class="co">#&gt; cement(it, is, &quot;shiny&quot;)</span></code></pre></div>
+<p>This technique is essential to work your way around to mastering tidy eval.</p>
+</div>
+<div id="creating-symbols" class="section level3">
+<h3>Creating symbols</h3>
+<p>Now that we are armed with quasiquotation, let’s try to program with the dplyr verb <code>mutate()</code>. We’ll take a BMI computation as running example.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Rescale height</span>
+starwars &lt;-<span class="st"> </span><span class="kw">mutate</span>(starwars, <span class="dt">height =</span> height <span class="op">/</span><span class="st"> </span><span class="dv">100</span>)
+
+<span class="kw">transmute</span>(starwars, <span class="dt">bmi =</span> mass <span class="op">/</span><span class="st"> </span>height<span class="op">^</span><span class="dv">2</span>)
+<span class="co">#&gt; # A tibble: 87 x 1</span>
+<span class="co">#&gt;        bmi</span>
+<span class="co">#&gt;      &lt;dbl&gt;</span>
+<span class="co">#&gt; 1 26.02758</span>
+<span class="co">#&gt; 2 26.89232</span>
+<span class="co">#&gt; 3 34.72222</span>
+<span class="co">#&gt; 4 33.33007</span>
+<span class="co">#&gt; # ... with 83 more rows</span></code></pre></div>
+<p>Let’s say we want to vary the height input. A first intuition might be to store the column name in a variable and unquote it. But we get an error:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> &quot;height&quot;</span>
+
+<span class="kw">transmute</span>(starwars, <span class="dt">bmi =</span> mass <span class="op">/</span><span class="st"> </span>(<span class="op">!!</span><span class="st"> </span>x)<span class="op">^</span><span class="dv">2</span>)
+<span class="co">#&gt; Error in mutate_impl(.data, dots): Evaluation error: non-numeric argument to binary operator.</span></code></pre></div>
+<p>The error message indicates a type error. A binary operator expected a numeric input but got something else. The error becomes clear if we use <code>expr()</code> to debug the unquoting:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">expr</span>(<span class="kw">transmute</span>(starwars, <span class="dt">bmi =</span> mass <span class="op">/</span><span class="st"> </span>(<span class="op">!!</span><span class="st"> </span>x)<span class="op">^</span><span class="dv">2</span>))
+<span class="co">#&gt; transmute(starwars, bmi = mass/(&quot;height&quot;)^2)</span></code></pre></div>
+<p>We are unquoting a string and that’s exactly what <code>transmute()</code> uses to evaluate the BMI. This can’t work! We need to unquote something that looks like code instead of a string. What we are looking for is a <strong>symbol</strong>. A symbol is a string that references an object in a context. Symbols are the meat of R code. In <code>foo(bar)</code>, <code>foo</code> is a symbol that references a function and <code>bar</code> is a symbol that references some object.</p>
+<p>There are two ways of creating symbolic R code objects: by quotation or by construction. We already know how to create symbols by quoting. However that does not help us much because we face the same issue again, namely that the quoted symbol is a constant that can’t be varied:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quote</span>(height)
+<span class="co">#&gt; height</span>
+
+<span class="kw">expr</span>(height)
+<span class="co">#&gt; height</span></code></pre></div>
+<p>The other way is to build it out of a string using the constructor <code>sym()</code>. Constructors are regular functions and can be programmed with variables:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sym</span>(<span class="st">&quot;height&quot;</span>)
+<span class="co">#&gt; height</span>
+
+x &lt;-<span class="st"> &quot;height&quot;</span>
+<span class="kw">sym</span>(x)
+<span class="co">#&gt; height</span></code></pre></div>
+<p>Let’s build a symbol and try to unquote it in the transmute expression. Using <code>expr()</code> to examine the effect of unquoting, things are looking good:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span><span class="kw">sym</span>(<span class="st">&quot;height&quot;</span>)
+
+<span class="kw">expr</span>(<span class="kw">transmute</span>(starwars, <span class="dt">bmi =</span> mass <span class="op">/</span><span class="st"> </span>(<span class="op">!!</span><span class="st"> </span>x)<span class="op">^</span><span class="dv">2</span>))
+<span class="co">#&gt; transmute(starwars, bmi = mass/(height)^2)</span></code></pre></div>
+<p>And indeed it now works!</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">transmute</span>(starwars, <span class="dt">bmi =</span> mass <span class="op">/</span><span class="st"> </span>(<span class="op">!!</span><span class="st"> </span>x)<span class="op">^</span><span class="dv">2</span>)
+<span class="co">#&gt; # A tibble: 87 x 1</span>
+<span class="co">#&gt;        bmi</span>
+<span class="co">#&gt;      &lt;dbl&gt;</span>
+<span class="co">#&gt; 1 26.02758</span>
+<span class="co">#&gt; 2 26.89232</span>
+<span class="co">#&gt; 3 34.72222</span>
+<span class="co">#&gt; 4 33.33007</span>
+<span class="co">#&gt; # ... with 83 more rows</span></code></pre></div>
+</div>
+</div>
+<div id="creating-a-wrapper-around-a-dplyr-pipeline" class="section level2">
+<h2>Creating a wrapper around a dplyr pipeline</h2>
+<p>Quasiquotation is all we need to write our first wrapper function around a dplyr pipeline. The goal is to write reliable functions that reduce duplication in our data analysis code. Let’s say that we often take a grouped average using dplyr and our scripts are littered with little pipelines that look like this:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">starwars <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">group_by</span>(species) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">summarise</span>(<span class="dt">avg =</span> <span class="kw">mean</span>(height))
+<span class="co">#&gt; # A tibble: 38 x 2</span>
+<span class="co">#&gt;    species   avg</span>
+<span class="co">#&gt;      &lt;chr&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1   Aleena  0.79</span>
+<span class="co">#&gt; 2 Besalisk  1.98</span>
+<span class="co">#&gt; 3   Cerean  1.98</span>
+<span class="co">#&gt; 4 Chagrian  1.96</span>
+<span class="co">#&gt; # ... with 34 more rows</span></code></pre></div>
+<p>It would be a good idea to extract this logic into a function. It would reduce the risk of writing a typo and would make our code more concise as well as clearer if we choose a good name for this function.</p>
+<p>We know from the previous sections that this kind of naive wrapper will not work because the variable names will be automatically quoted:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mean_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, var, group) {
+  data <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(group) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">avg =</span> <span class="kw">mean</span>(var))
+}
+
+<span class="kw">mean_by</span>(starwars, <span class="st">&quot;species&quot;</span>, <span class="st">&quot;height&quot;</span>)
+<span class="co">#&gt; Error in grouped_df_impl(data, unname(vars), drop): Column `group` is unknown</span></code></pre></div>
+<ul>
+<li><p>In the best case the column names they contain will be ignored. For instance <code>group_by()</code> looks for a column named <code>group</code> and doesn’t see the string <code>&quot;species&quot;</code>.</p></li>
+<li><p>In the worst case they will be misused. For instance <code>summarise()</code> would try to take the average of the string <code>&quot;height&quot;</code>.</p></li>
+</ul>
+<p>To avoid this, our wrapper simply needs to construct symbols from its inputs and unquote them in the pipeline:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mean_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, var, group) {
+  var &lt;-<span class="st"> </span><span class="kw">sym</span>(var)
+  group &lt;-<span class="st"> </span><span class="kw">sym</span>(group)
+
+  data <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span><span class="st"> </span>group) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">avg =</span> <span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>var))
+}
+
+<span class="kw">mean_by</span>(starwars, <span class="st">&quot;height&quot;</span>, <span class="st">&quot;species&quot;</span>)
+<span class="co">#&gt; # A tibble: 38 x 2</span>
+<span class="co">#&gt;    species   avg</span>
+<span class="co">#&gt;      &lt;chr&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1   Aleena  0.79</span>
+<span class="co">#&gt; 2 Besalisk  1.98</span>
+<span class="co">#&gt; 3   Cerean  1.98</span>
+<span class="co">#&gt; 4 Chagrian  1.96</span>
+<span class="co">#&gt; # ... with 34 more rows</span>
+
+<span class="kw">mean_by</span>(starwars, <span class="st">&quot;mass&quot;</span>, <span class="st">&quot;eye_color&quot;</span>)
+<span class="co">#&gt; # A tibble: 15 x 2</span>
+<span class="co">#&gt;   eye_color   avg</span>
+<span class="co">#&gt;       &lt;chr&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1     black    NA</span>
+<span class="co">#&gt; 2      blue    NA</span>
+<span class="co">#&gt; 3 blue-gray    77</span>
+<span class="co">#&gt; 4     brown    NA</span>
+<span class="co">#&gt; # ... with 11 more rows</span></code></pre></div>
+<div id="creating-your-own-quoting-functions" class="section level3">
+<h3>Creating your own quoting functions</h3>
+<p>The wrapper that we just created is a regular function that takes strings and doesn’t quote any of its inputs. This has the advantage that it is easy to program with but the inconvenient that it doesn’t integrate well with the rest of the tidyverse verbs. Fortunately it is easy to transform the wrapper into a quoting function.</p>
+<p>First we need to choose which of our wrapper arguments should be quoted. Given the friction that quotation causes for programming, it is best to only quote arguments when absolutely necessary, i.e. when it makes sense to refer to data frame columns. In dplyr, the argument that takes a data frame (which is always the first argument in order to be compatible with pipes) is never quoted. We’ll apply the same logic to our wrapper and only quote the <code>group</code> and <code>var</code> arguments.</p>
+<p>Tidy eval provides two functions to quote an argument supplied by the caller of a function. Both of those enable quasiquotation:</p>
+<ul>
+<li><code>enexpr()</code> which returns a raw expression.</li>
+<li><code>enquo()</code> which returns an expression wrapped in a <strong>quosure</strong>.</li>
+</ul>
+<p>Let’s first try <code>enexpr()</code> in a simple function that does nothing but capture its argument and return it right away:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">quoting &lt;-<span class="st"> </span><span class="cf">function</span>(x) <span class="kw">enexpr</span>(x)
+
+x &lt;-<span class="st"> </span><span class="kw">sym</span>(<span class="st">&quot;foo&quot;</span>)
+
+<span class="kw">quoting</span>(x)
+<span class="co">#&gt; x</span>
+
+<span class="kw">quoting</span>(<span class="op">!!</span><span class="st"> </span>x)
+<span class="co">#&gt; foo</span></code></pre></div>
+<p>We have in fact just reinvented <code>expr()</code>! Indeed <code>expr()</code> is a simple wrapper around <code>enexpr()</code>:</p>
+<div class="r-comment">
+<p>
+dplyr::expr was caused error because expr is in base, not dplyr
+<p>
+removed dplyr from dplyr::expr
+</div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">expr
+<span class="co">#&gt; function (expr) </span>
+<span class="co">#&gt; {</span>
+<span class="co">#&gt;     enexpr(expr)</span>
+<span class="co">#&gt; }</span>
+<span class="co">#&gt; &lt;environment: namespace:rlang&gt;</span></code></pre></div>
+<p>In the same vein, <code>quo()</code> is a wrapper around <code>enquo()</code>. All it does is to capture the expression of its argument, store it in a quosure, and return it as is:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">dplyr<span class="op">::</span>quo
+<span class="co">#&gt; function (expr) </span>
+<span class="co">#&gt; {</span>
+<span class="co">#&gt;     enquo(expr)</span>
+<span class="co">#&gt; }</span>
+<span class="co">#&gt; &lt;environment: namespace:rlang&gt;</span>
+
+<span class="kw">quo</span>(x)
+<span class="co">#&gt; &lt;quosure: global&gt;</span>
+<span class="co">#&gt; ~x</span>
+
+<span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span>x)
+<span class="co">#&gt; &lt;quosure: global&gt;</span>
+<span class="co">#&gt; ~foo</span></code></pre></div>
+<p>A quosure is like a raw expression except that it is evaluated in the original context of its capture. It combines an expression (a quote) and a context (an enclosure) in a single object. We’ll see below why it is important to keep track of the original context of arguments. For now, let’s just use it in our pipeline wrapper to transform it into a quoting function. As a reminder here is the current definition of our function:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mean_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, var, group) {
+  var &lt;-<span class="st"> </span><span class="kw">sym</span>(var)
+  group &lt;-<span class="st"> </span><span class="kw">sym</span>(group)
+
+  data <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span><span class="st"> </span>group) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">avg =</span> <span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>var))
+}</code></pre></div>
+<p>All we need to do is to replace the <code>sym()</code> constructor by <code>enquo()</code>:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mean_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, var, group) {
+  var &lt;-<span class="st"> </span><span class="kw">enquo</span>(var)
+  group &lt;-<span class="st"> </span><span class="kw">enquo</span>(group)
+
+  data <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span><span class="st"> </span>group) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">avg =</span> <span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>var))
+}</code></pre></div>
+<p>The wrapper now automatically quotes its arguments. This has several implications:</p>
+<ul>
+<li><p>First the user no longer has to supply quoted strings:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mean_by</span>(starwars, height, species)
+<span class="co">#&gt; # A tibble: 38 x 2</span>
+<span class="co">#&gt;    species   avg</span>
+<span class="co">#&gt;      &lt;chr&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1   Aleena  0.79</span>
+<span class="co">#&gt; 2 Besalisk  1.98</span>
+<span class="co">#&gt; 3   Cerean  1.98</span>
+<span class="co">#&gt; 4 Chagrian  1.96</span>
+<span class="co">#&gt; # ... with 34 more rows</span></code></pre></div></li>
+<li><p>Secondly, while <code>sym()</code> assumed that the supplied arguments were symbols, <code>enquo()</code> captures arbitrary expressions. This is a good fit for our wrapper because both <code>group_by()</code> and <code>summarise()</code> accept complex expressions:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mean_by</span>(starwars, height <span class="op">*</span><span class="st"> </span><span class="dv">100</span>, <span class="kw">as.factor</span>(species))
+<span class="co">#&gt; # A tibble: 38 x 2</span>
+<span class="co">#&gt;   `as.factor(species)`   avg</span>
+<span class="co">#&gt;                 &lt;fctr&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1               Aleena    79</span>
+<span class="co">#&gt; 2             Besalisk   198</span>
+<span class="co">#&gt; 3               Cerean   198</span>
+<span class="co">#&gt; 4             Chagrian   196</span>
+<span class="co">#&gt; # ... with 34 more rows</span></code></pre></div></li>
+<li><p>Since our function now quotes its arguments, it is no longer programmable in the usual way. If another function passes variables to <code>mean_by()</code>, it needs to use quasiquotation itself. A typical composition of quoting functions thus looks like a chain of quoted and unquoted arguments:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mean_by_species &lt;-<span class="st"> </span><span class="cf">function</span>(data, var) {
+  var &lt;-<span class="st"> </span><span class="kw">enquo</span>(var)
+  <span class="kw">mean_by</span>(data, <span class="op">!!</span><span class="st"> </span>var, species)
+}
+
+<span class="kw">mean_by_species</span>(starwars, height)
+<span class="co">#&gt; # A tibble: 38 x 2</span>
+<span class="co">#&gt;    species   avg</span>
+<span class="co">#&gt;      &lt;chr&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1   Aleena  0.79</span>
+<span class="co">#&gt; 2 Besalisk  1.98</span>
+<span class="co">#&gt; 3   Cerean  1.98</span>
+<span class="co">#&gt; 4 Chagrian  1.96</span>
+<span class="co">#&gt; # ... with 34 more rows</span></code></pre></div></li>
+</ul>
+<p>Thanks to <code>enquo()</code> we now have a wrapper function that quotes its inputs and interacts with dplyr verbs via quasiquotation. It is getting pretty close to a real tidyverse-like user interface! However we could still improve a few things, like the automatic labelling of column names which could be better. It would also be nice if the wrapper could accept a variable number of arguments like other dplyr or tidyr verbs. We’ll address the latter issue first.</p>
+</div>
+<div id="accepting-multiple-arguments" class="section level3">
+<h3>Accepting multiple arguments</h3>
+<p>Whether our wrapper should take multiple grouping variables or multiple variables to average is a design decision that could go either way depending on your needs. In this tutorial we’ll allow multiple grouping variables.</p>
+<p>It is relatively easy to write R functions that accept an unspecified number of arguments. The function just takes <code>...</code> as argument. In the body of the function <code>...</code> are then forwarded to another variadic function that is in charge of materialising the arguments. The end point is typically the list function:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">variadic &lt;-<span class="st"> </span><span class="cf">function</span>(...) <span class="kw">list</span>(...)
+
+<span class="kw">variadic</span>(<span class="st">&quot;foo&quot;</span>, <span class="st">&quot;bar&quot;</span>)
+<span class="co">#&gt; [[1]]</span>
+<span class="co">#&gt; [1] &quot;foo&quot;</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; [[2]]</span>
+<span class="co">#&gt; [1] &quot;bar&quot;</span></code></pre></div>
+<p>Passing on arguments through dots to quoting functions is very easy. Unlike named arguments which need to be repeatedly quoted and unquoted, the <code>...</code> object can just be passed along:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mean_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, var, ...) {
+  var &lt;-<span class="st"> </span><span class="kw">enquo</span>(var)
+
+  data <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(...) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">avg =</span> <span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>var))
+}</code></pre></div>
+<p>Your users can now create grouped averages for any combination of groups!</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mean_by</span>(starwars, height, species, eye_color)
+<span class="co">#&gt; # A tibble: 51 x 3</span>
+<span class="co">#&gt; # Groups:   species [?]</span>
+<span class="co">#&gt;    species eye_color   avg</span>
+<span class="co">#&gt;      &lt;chr&gt;     &lt;chr&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1   Aleena   unknown  0.79</span>
+<span class="co">#&gt; 2 Besalisk    yellow  1.98</span>
+<span class="co">#&gt; 3   Cerean    yellow  1.98</span>
+<span class="co">#&gt; 4 Chagrian      blue  1.96</span>
+<span class="co">#&gt; # ... with 47 more rows</span></code></pre></div>
+<p>You can learn about more advanced ways of dealing with multiple arguments with <code>exprs()</code>, <code>quos()</code> and <code>syms()</code> in the section on variadic quasiquotation below.</p>
+</div>
+<div id="labelling-inputs" class="section level3">
+<h3>Labelling inputs</h3>
+<p>dplyr functions try their best to provide useful column names for new columns. This is an area where our wrapper could use some improvement:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">names</span>(<span class="kw">mean_by</span>(starwars, height, <span class="kw">as.factor</span>(species)))
+<span class="co">#&gt; [1] &quot;as.factor(species)&quot; &quot;avg&quot;</span></code></pre></div>
+<p>First note that the issue is in fact already solved for the grouping variables. That’s a benefit from taking arguments with <code>...</code>, they accept optional names:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mean_by</span>(starwars, height, <span class="dt">species_fct =</span> <span class="kw">as.factor</span>(species))
+<span class="co">#&gt; # A tibble: 38 x 2</span>
+<span class="co">#&gt;   species_fct   avg</span>
+<span class="co">#&gt;        &lt;fctr&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1      Aleena  0.79</span>
+<span class="co">#&gt; 2    Besalisk  1.98</span>
+<span class="co">#&gt; 3      Cerean  1.98</span>
+<span class="co">#&gt; 4    Chagrian  1.96</span>
+<span class="co">#&gt; # ... with 34 more rows</span></code></pre></div>
+<p>However for named arguments we need to do a bit more work. We’ll make use of two tidy eval features:</p>
+<ul>
+<li><p><code>quo_name()</code> which is a helper that transforms an arbitrary expression (including quosures) to a name that is suitable for data frames:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">wrapper &lt;-<span class="st"> </span><span class="cf">function</span>(x) {
+  x &lt;-<span class="st"> </span><span class="kw">enquo</span>(x)
+  <span class="kw">quo_name</span>(x)
+}
+
+<span class="kw">wrapper</span>(foo)
+<span class="co">#&gt; [1] &quot;foo&quot;</span>
+
+<span class="kw">wrapper</span>(<span class="kw">foo</span>(bar, <span class="kw">baz</span>()))
+<span class="co">#&gt; [1] &quot;foo(bar, baz())&quot;</span></code></pre></div></li>
+<li><p>The <code>:=</code> operator. It makes it possible to unquote on the left-hand side of an argument. Since the LHS of <code>=</code> is automatically quoted, it makes sense to have quasiquotation for argument names:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> &quot;Column Name&quot;</span>
+<span class="kw">summarise</span>(starwars, <span class="op">!!</span><span class="st"> </span>x <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">n</span>())
+<span class="co">#&gt; # A tibble: 1 x 1</span>
+<span class="co">#&gt;   `Column Name`</span>
+<span class="co">#&gt;           &lt;int&gt;</span>
+<span class="co">#&gt; 1            87</span></code></pre></div></li>
+</ul>
+<p>We can give a nice default name to the column of averages by transforming the captured variable to a name and pasting a prefix at its front:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mean_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, var, ...) {
+  var &lt;-<span class="st"> </span><span class="kw">enquo</span>(var)
+
+  name &lt;-<span class="st"> </span><span class="kw">quo_name</span>(var)
+  name &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;avg_&quot;</span>, name)
+
+  data <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(...) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">summarise</span>(<span class="op">!!</span><span class="st"> </span>name <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>var))
+}</code></pre></div>
+<p>We get a good name that reflects the user input, even when the argument is a complex expression:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">mean_by</span>(starwars, height, species)
+<span class="co">#&gt; # A tibble: 38 x 2</span>
+<span class="co">#&gt;    species avg_height</span>
+<span class="co">#&gt;      &lt;chr&gt;      &lt;dbl&gt;</span>
+<span class="co">#&gt; 1   Aleena       0.79</span>
+<span class="co">#&gt; 2 Besalisk       1.98</span>
+<span class="co">#&gt; 3   Cerean       1.98</span>
+<span class="co">#&gt; 4 Chagrian       1.96</span>
+<span class="co">#&gt; # ... with 34 more rows</span>
+
+<span class="kw">mean_by</span>(starwars, <span class="kw">identity</span>(height), species)
+<span class="co">#&gt; # A tibble: 38 x 2</span>
+<span class="co">#&gt;    species `avg_identity(height)`</span>
+<span class="co">#&gt;      &lt;chr&gt;                  &lt;dbl&gt;</span>
+<span class="co">#&gt; 1   Aleena                   0.79</span>
+<span class="co">#&gt; 2 Besalisk                   1.98</span>
+<span class="co">#&gt; 3   Cerean                   1.98</span>
+<span class="co">#&gt; 4 Chagrian                   1.96</span>
+<span class="co">#&gt; # ... with 34 more rows</span></code></pre></div>
+<p>Overall the most flexible interface is <code>...</code> since they let the user specify custom names. But what if we want to add a prefix to the grouping variables as well? Then we can’t just pass the <code>...</code> variable down to <code>group_by()</code>, we have to capture all the variables in the dots and modify their names before passing them on. This calls for more advanced means of working with multiple arguments.</p>
+</div>
+<div id="capturing-and-modifying-arguments-in-..." class="section level3">
+<h3>Capturing and modifying arguments in <code>...</code></h3>
+<p>Up until now, we have captured <em>named arguments</em> with <code>enquo()</code>, we have forwarded variadic arguments by passing <code>...</code> to tidy eval functions, but we have yet to actually capture those arguments contained in <code>...</code>. Getting a hold on the expressions supplied as <code>...</code> arguments is necessary in order to make modifications such as changing the argument names.</p>
+<p>As we have seen arguments transiting through dots need to be materialised with endpoint functions such as <code>c()</code> or <code>list()</code>. Tidy eval provides two variadic endpoints for dots: <code>exprs()</code> and <code>quos()</code>. These functions quote all of their inputs and return them in a list of expressions or quosures:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">exprs</span>(foo, bar)
+<span class="co">#&gt; [[1]]</span>
+<span class="co">#&gt; foo</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; [[2]]</span>
+<span class="co">#&gt; bar</span>
+
+<span class="kw">quos</span>(baz, bam)
+<span class="co">#&gt; [[1]]</span>
+<span class="co">#&gt; &lt;quosure: global&gt;</span>
+<span class="co">#&gt; ~baz</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; [[2]]</span>
+<span class="co">#&gt; &lt;quosure: global&gt;</span>
+<span class="co">#&gt; ~bam</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; attr(,&quot;class&quot;)</span>
+<span class="co">#&gt; [1] &quot;quosures&quot;</span></code></pre></div>
+<p>Thanks to the magic of <code>...</code> forwarding, <code>exprs()</code> and <code>quos()</code> will capture all arguments passed through dots:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">quoting &lt;-<span class="st"> </span><span class="cf">function</span>(...) {
+  <span class="kw">exprs</span>(foo, ...)
+}
+
+<span class="kw">quoting</span>(<span class="kw">bar</span>(baz))
+<span class="co">#&gt; [[1]]</span>
+<span class="co">#&gt; foo</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; [[2]]</span>
+<span class="co">#&gt; bar(baz)</span></code></pre></div>
+<p>We’ll first experiment with a simple <code>group_by()</code> wrapper before applying our new knowledge to the <code>mean_by()</code> wrapper. This wrapper will prefix all grouping variables with <code>grp_</code>. To achieve this there are two problems to solve: modifying the names, and forwarding the list of captured arguments to <code>group_by()</code> once we are done changing the names. Let’s start this function with a bare skeleton. It will take a data frame, a prefix for the group names, and an undefined number of grouping arguments:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">prefixed_group_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, prefix, ...) {
+  groups &lt;-<span class="st"> </span><span class="kw">quos</span>(...)
+  groups
+}
+
+groups &lt;-<span class="st"> </span><span class="kw">prefixed_group_by</span>(starwars, <span class="st">&quot;grp_&quot;</span>, <span class="kw">as.factor</span>(species), <span class="dt">color =</span> eye_color)
+
+groups
+<span class="co">#&gt; [[1]]</span>
+<span class="co">#&gt; &lt;quosure: global&gt;</span>
+<span class="co">#&gt; ~as.factor(species)</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; $color</span>
+<span class="co">#&gt; &lt;quosure: global&gt;</span>
+<span class="co">#&gt; ~eye_color</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; attr(,&quot;class&quot;)</span>
+<span class="co">#&gt; [1] &quot;quosures&quot;</span>
+
+<span class="kw">names</span>(groups)
+<span class="co">#&gt; [1] &quot;&quot;      &quot;color&quot;</span></code></pre></div>
+<p>We have supplied two arguments as grouping variable. The first is an unnamed complex expression, the second is a named symbol. The first thing to do is to give a default name to arguments. One way to obtain default names would be to map <code>quo_name()</code> over the relevant elements but there is an easier way. <code>quos()</code> will do it for you if you switch on the <code>.named</code> argument:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">quos &lt;-<span class="st"> </span><span class="kw">quos</span>(<span class="kw">foo</span>(bar), <span class="dt">baz =</span> <span class="kw">foo</span>(), <span class="dt">.named =</span> <span class="ot">TRUE</span>)
+<span class="kw">names</span>(quos)
+<span class="co">#&gt; [1] &quot;foo(bar)&quot; &quot;baz&quot;</span></code></pre></div>
+<p>We are now in a good position for adding a prefix to the names of captured arguments:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">prefixed_group_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, prefix, ...) {
+  groups &lt;-<span class="st"> </span><span class="kw">quos</span>(..., <span class="dt">.named =</span> <span class="ot">TRUE</span>)
+  <span class="kw">names</span>(groups) &lt;-<span class="st"> </span><span class="kw">paste0</span>(prefix, <span class="kw">names</span>(groups))
+  groups
+}
+
+groups &lt;-<span class="st"> </span><span class="kw">prefixed_group_by</span>(starwars, <span class="st">&quot;grp_&quot;</span>, <span class="kw">as.factor</span>(species), <span class="dt">color =</span> eye_color)
+<span class="kw">names</span>(groups)
+<span class="co">#&gt; [1] &quot;grp_as.factor(species)&quot; &quot;grp_color&quot;</span></code></pre></div>
+<p>Alright! We only have one last problem to solve. We need a way to forward this list of arguments to <code>group_by()</code>. Unquoting the list with <code>!!</code> is not helpful here because <code>group_by()</code> expects separate arguments and wouldn’t know what to do with a whole list. This leads us to <code>!!!</code>, one of the most handy features of tidy eval.</p>
+</div>
+<div id="unquote-splicing-arguments-with" class="section level3">
+<h3>Unquote-splicing arguments with <code>!!!</code></h3>
+<p>The <strong>unquote-splicing</strong> operator <code>!!!</code> is a variant of simple unquoting. Just like <code>!!</code>, it evaluates its right-hand side right away. The difference is in the way it substitutes the result in the surrounding call:</p>
+<ul>
+<li><p><code>!!</code> substitutes in place:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">expr</span>(<span class="kw">call</span>(<span class="op">!!</span><span class="st"> </span><span class="dv">1</span><span class="op">:</span><span class="dv">5</span>))
+<span class="co">#&gt; call(1:5)</span></code></pre></div></li>
+<li><p><code>!!!</code> takes a vector and substitutes all its elements in the call:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">expr</span>(<span class="kw">call</span>(<span class="op">!!!</span><span class="st"> </span><span class="dv">1</span><span class="op">:</span><span class="dv">5</span>))
+<span class="co">#&gt; call(1L, 2L, 3L, 4L, 5L)</span></code></pre></div></li>
+</ul>
+<p>This is exactly what we need to forward a list of captured arguments to <code>group_by()</code>!</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">prefixed_group_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, prefix, ...) {
+  groups &lt;-<span class="st"> </span><span class="kw">quos</span>(..., <span class="dt">.named =</span> <span class="ot">TRUE</span>)
+  <span class="kw">names</span>(groups) &lt;-<span class="st"> </span><span class="kw">paste0</span>(prefix, <span class="kw">names</span>(groups))
+
+  <span class="kw">group_by</span>(data, <span class="op">!!!</span><span class="st"> </span>groups)
+}
+
+<span class="kw">prefixed_group_by</span>(starwars, <span class="st">&quot;grp_&quot;</span>, <span class="kw">as.factor</span>(species), <span class="dt">color =</span> eye_color)
+<span class="co">#&gt; # A tibble: 87 x 15</span>
+<span class="co">#&gt; # Groups:   grp_as.factor(species), grp_color [51]</span>
+<span class="co">#&gt;             name height  mass hair_color  skin_color eye_color birth_year</span>
+<span class="co">#&gt;            &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt;      &lt;chr&gt;       &lt;chr&gt;     &lt;chr&gt;      &lt;dbl&gt;</span>
+<span class="co">#&gt; 1 Luke Skywalker   1.72    77      blond        fair      blue       19.0</span>
+<span class="co">#&gt; 2          C-3PO   1.67    75       &lt;NA&gt;        gold    yellow      112.0</span>
+<span class="co">#&gt; 3          R2-D2   0.96    32       &lt;NA&gt; white, blue       red       33.0</span>
+<span class="co">#&gt; 4    Darth Vader   2.02   136       none       white    yellow       41.9</span>
+<span class="co">#&gt; # ... with 83 more rows, and 8 more variables: gender &lt;chr&gt;,</span>
+<span class="co">#&gt; #   homeworld &lt;chr&gt;, species &lt;chr&gt;, films &lt;list&gt;, vehicles &lt;list&gt;,</span>
+<span class="co">#&gt; #   starships &lt;list&gt;, `grp_as.factor(species)` &lt;fctr&gt;, grp_color &lt;chr&gt;</span></code></pre></div>
+<p>Modifying <code>mean_by()</code> to automatically prefix the grouping factors is now child’s play:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mean_by &lt;-<span class="st"> </span><span class="cf">function</span>(data, var, ...) {
+  var &lt;-<span class="st"> </span><span class="kw">enquo</span>(var)
+
+  name &lt;-<span class="st"> </span><span class="kw">quo_name</span>(var)
+  name &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;avg_&quot;</span>, name)
+
+  data <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">prefixed_group_by</span>(<span class="st">&quot;grp_&quot;</span>, ...) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">summarise</span>(<span class="op">!!</span><span class="st"> </span>name <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>var))
+}
+
+<span class="kw">mean_by</span>(starwars, height, species, <span class="dt">eye =</span> eye_color)
+<span class="co">#&gt; # A tibble: 51 x 3</span>
+<span class="co">#&gt; # Groups:   grp_species [?]</span>
+<span class="co">#&gt;   grp_species grp_eye avg_height</span>
+<span class="co">#&gt;         &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt;</span>
+<span class="co">#&gt; 1      Aleena unknown       0.79</span>
+<span class="co">#&gt; 2    Besalisk  yellow       1.98</span>
+<span class="co">#&gt; 3      Cerean  yellow       1.98</span>
+<span class="co">#&gt; 4    Chagrian    blue       1.96</span>
+<span class="co">#&gt; # ... with 47 more rows</span></code></pre></div>
+</div>
+<div id="wrapping-it-up" class="section level3">
+<h3>Wrapping it up</h3>
+<p>In order to write our little wrapper, we have learned to:</p>
+<ul>
+<li><p>Quote R code with <code>quote()</code> and <code>expr()</code> and construct symbols with <code>sym()</code>.</p></li>
+<li><p>Capture named arguments with <code>enquo()</code> and <code>...</code> arguments with <code>quos()</code>.</p></li>
+<li><p>Unquote single arguments with <code>!!</code> and multiple arguments with <code>!!!</code>.</p></li>
+<li><p>Use <code>:=</code> to enable <code>!!</code> on the left-hand side of a named argument.</p></li>
+<li><p>Debug the unquoting by wrapping <code>expr()</code> around an expression.</p></li>
+<li><p>Use <code>quo_name()</code> and <code>quos(.named = TRUE)</code> to provide default names to captured arguments.</p></li>
+</ul>
+<p>This set of techniques will get you a long way as quasiquotation is really the meat of programming with tidy eval. <code>enquo()</code> and <code>quos()</code> return quosures that are more reliable than bare expressions but you don’t have to understand how quosures work or why they are needed to effectively use tidy eval.</p>
+<p>When you feel ready, you can learn about the concept of quosures. It will improve your understanding of R programming and you will gain knowledge that can be applied to R functions. Quosures and closures (the technical name of R functions) have a lot in common!</p>
+</div>
+</div>
+<div id="where-do-quoting-verbs-find-things" class="section level2">
+<h2>Where do quoting verbs find things?</h2>
+<div id="contexts-and-hierarchical-ambiguity" class="section level3">
+<h3>Contexts and hierarchical ambiguity</h3>
+</div>
+<div id="solving-ambiguity-with-quasiquotation-and-the-.data-pronoun" class="section level3">
+<h3>Solving ambiguity with quasiquotation and the <code>.data</code> pronoun</h3>
+</div>
+<div id="raw-expressions-versus-contextual-expressions-quosures" class="section level3">
+<h3>Raw expressions versus contextual expressions (quosures)</h3>
+</div>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>As we will see later on <code>exprs()</code> captures the expressions of its inputs. Passing <code>...</code> to <code>exprs()</code> returns a list of quoted arguments forwarded through dots.<a href="#fnref1">↩</a></p></li>
+</ol>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
