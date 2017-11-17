@@ -2,6 +2,19 @@ a <- 2
 sum(a * 2, a)
 
 
+q <- rlang::quo(a + 1)
+q2 <- rlang::quo(a + UQ(q))
+q3 <- rlang::quo(a + q)
+rlang::UQ(q)
+
+str(q3)
+attributes(q3)
+q3[2]
+
+q2[2]
+
+identity(rlang::UQ(rlang::UQ(q)))
+sum(!! q)
 as.character(quote(a + 2))
 
 
